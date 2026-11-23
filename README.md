@@ -80,7 +80,8 @@
 - `Assets/Models/Skeletons_Real/` — два полных скелета:
   - **T. rex** — 99 889 треугольников, 1,4 м, скан реплики Rigsters (**CC BY 4.0**), сгенерированная 2K PBR-текстура кости;
   - **Triceratops** — 89 999 треугольников, 1,2 м, скан Smithsonian **USNM PAL 500000** (**CC0**), оригинальные 4K PBR-текстуры, музейная поза с опущенной головой; отдельная подставка `Triceratops_Stand`.
-- Сцена: `Blender/RHC7_Skeletons_Real.blend`. Превью: `Screenshots/skeletons_real_sheet.png`, `skeletons_real_pair.png`.
+- `Assets/Models/Bones_Real/` — **20 игровых пропсов** из этих сканов: 10 частей T. rex (шея, лапы, стопа, таз, хвост, рёбра) и 10 частей/областей черепа Triceratops (череп, челюсть, воротник, рога, зубной ряд). Отдельные FBX + общий GLB. Подробности и ограничения: `Assets/Models/Bones_Real/README.md`.
+- Сцена: `Blender/RHC7_Skeletons_Real.blend`, набор костей — `Blender/RHC7_BoneSet_Real.blend`. Превью: `Screenshots/skeletons_real_sheet.png`, `skeletons_real_pair.png`, `bones_real_20_sheet.png`.
 - Лицензии, обработка и импорт в Unity: `Assets/Models/Skeletons_Real/README.md`.
 - Это **дисплейные** ассеты. Игровые кости для чистки — `Assets/Models/Bones/` (v3, PBR). Процедурные скелеты в `Assets/Models/Skeletons/` помечены как устаревшие.
 
