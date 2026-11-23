@@ -1,33 +1,36 @@
-# RHC7 — Blender bones v2
+# RHC7 — Blender bones v2 (PBR)
 
-Три стилизованные game-ready кости для прототипа. Сделаны в Blender 5.1.
+Три детализированные стилизованные кости. Сделаны в Blender 5.1, экспортированы в FBX и GLB с PBR-текстурами.
 
 | Кость | Вид | FBX | GLB | Треугольники | Длина |
 |---|---|---|---|---|---|
-| Бедро | теропод | `Bone_Femur.fbx` | `Bone_Femur.glb` | 24 704 | 0,300 м |
-| Плечевая | цератопс | `Bone_Humerus.fbx` | `Bone_Humerus.glb` | 22 144 | 0,260 м |
-| Большая берцовая | зауропод | `Bone_Tibia.fbx` | `Bone_Tibia.glb` | 25 984 | 0,340 м |
+| Бедро | теропод | `Bone_Femur.fbx` | `Bone_Femur.glb` | 24 704 | 0,302 м |
+| Плечевая | цератопс | `Bone_Humerus.fbx` | `Bone_Humerus.glb` | 22 144 | 0,263 м |
+| Большая берцовая | зауропод | `Bone_Tibia.fbx` | `Bone_Tibia.glb` | 25 984 | 0,344 м |
 
 Исходник: `Blender/RHC7_Bones.blend`.  
-Превью: `Screenshots/bones_sheet.png`, `Screenshots/bones_final_lineup.png`.  
-Референсы и анатомия: `Геймдизайн/Кости_динозавров.md`.
+Превью: `Screenshots/bones_textured_sheet.png`, `Screenshots/bones_textured_lineup.png`.  
+Референсы: `Геймдизайн/Кости_динозавров.md`.
 
-## Для Unity
+## Текстуры
 
-- Меш центрирован, длина по **X**.
-- Один UV-слой `UVMap`: U — по окружности, V — по длине. Это важно для маски грязи в `BoneCleaning.shader`.
-- Материал в FBX — превью `BonePreviewMat`; в игре его заменяет материал из `BoneSurface`.
-- Для попадания курсора нужен `MeshCollider`.
-- Импорт: Scale Factor = 1, Y-up; при необходимости Generate Colliders.
+В `Textures/` для каждой кости:
 
-## Подключение
+- `T_<Bone>_Albedo.png` — цвет, sRGB;
+- `T_<Bone>_Normal.png` — normal map, Non-Color;
+- `T_<Bone>_Roughness.png` — roughness, Non-Color;
+- `T_<Bone>_AO.png` — ambient occlusion, Non-Color.
 
-1. Импортировать FBX в Unity.
-2. Заменить `MeshFilter.mesh` на нужный меш.
-3. Обновить `MeshCollider`.
-4. Проверить ссылки в `CleaningController.boneMeshes`.
-5. Проверить UV: грязь должна сниматься полосой по окружности, а не пятнами.
+Разрешение 1024×1024. UV — цилиндрическая: U по окружности, V по длине. Это нужно для маски грязи в `BoneCleaning.shader`.
 
-## Ограничения
+## Unity
 
-Модели стилизованные, не фотограмметрия. Суставы и торцы упрощены; на игровом расстоянии читаются нормально. Для фотореализма нужен скан Smithsonian/MorphoSource + retopo.
+- Импорт FBX: Scale Factor = 1, Y-up.
+- На объекте кости нужен `MeshCollider`.
+- `MeshFilter.mesh` заменить на нужный меш.
+- Материал: сейчас в игре используется `RHC7/Bone Cleaning`, который рисует кость процедурно. Чтобы включить PBR-текстуры, нужно добавить в шейдер сэмплы `_BoneAlbedo`, `_BoneNormal`, `_BoneRoughness`, `_BoneAO` и назначить материалы на кости. Это следующий шаг интеграции.
+- Если использовать GLB/URP Lit без кастомного шейдера, текстуры уже встроены в GLB.
+
+## Важно
+
+Модели стилизованные, не фотограмметрия. Анатомия читаемая, но упрощённая. Для научной точности нужен скан Smithsonian/MorphoSource + retopo.
