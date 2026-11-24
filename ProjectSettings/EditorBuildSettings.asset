@@ -8,5 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/CleaningCore.unity
     guid: 6056ca39e6dfc2e4fb0eada494b28ee6
+  - enabled: 1
+    path: Assets/Scenes/RHC7_Hall.unity
+    guid: e55b02cfee9e1574faf789e1d04eb578
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
