@@ -85,15 +85,12 @@
 - Лицензии, обработка и импорт в Unity: `Assets/Models/Skeletons_Real/README.md`.
 - Это **дисплейные** ассеты. Игровые кости для чистки — `Assets/Models/Bones/` (v3, PBR). Процедурные скелеты в `Assets/Models/Skeletons/` помечены как устаревшие.
 
-## Зал музея в Unity
+## Простой стол в Unity
 
-- Сцена **`Assets/Scenes/RHC7_Hall.unity`** (добавлена в Build Settings, отдельно от `CleaningCore`).
-- Зал **26 × 34 × 9 м**: колонны, кессонный потолок, люстры, ковровая дорожка, заголовок «RHC7 · HALL OF BONES».
-- **Два стола с открытыми ящиками:** слева **T. rex** (10 костей), справа **Triceratops** (10 костей) из `Assets/Models/Bones_Real`.
-- Два скелета на подиумах (масштаб 4×): T. rex ~5,6 м, Triceratops ~4,8 м, лицом друг к другу, с подписями.
-- Камеры: `HallCamera` — общий вид, `TableCameraL` / `TableCameraR` — крупные планы ящиков.
-- Ящики пока **статически открыты**; интерактивное открытие/закрытие и подключение костей к циклу чистки — следующий шаг.
-- Превью: `Screenshots/hall_final2.png`, `hall_final2_trex_table.png`, `hall_final2_trike_table.png`.
+- Сцена **`Assets/Scenes/RHC7_SimpleTable.unity`** (добавлена в Build Settings; `CleaningCore` остаётся).
+- Простой деревянный стол: столешница, фартук, четыре ножки и стяжки. Без ящика, костей, HUD и скриптов.
+- В сцене: пол, три стены, направленный свет, заполняющий свет и камера `SimpleTableCamera`.
+- Превью: `Screenshots/simple_table_final.png`.
 
 ## Обязательная смена инструмента
 
