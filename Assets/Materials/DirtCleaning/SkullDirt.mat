@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SkullDirt
+  m_Shader: {fileID: 4800000, guid: 6391f056de53f124cac3c96dbfe3b12d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BoneAO:
+        m_Texture: {fileID: 2800000, guid: d4cd1a1258b720848aef2ac80efbf033, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BoneAlbedo:
+        m_Texture: {fileID: 2800000, guid: 060904165f247454a863c54218fe482b, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BoneNormal:
+        m_Texture: {fileID: 2800000, guid: d0888adf3bd62434680171a935d58bdd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DirtMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DirtVolume:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BoneSmoothness: 0.3
+    - _DetailScale: 190
+    - _DirtNormalStrength: 2
+    - _DirtSmoothness: 0.04
+    - _DustOpacity: 0.82
+    m_Colors:
+    - _ClayColor: {r: 0.34, g: 0.18, b: 0.09, a: 1}
+    - _CrustColor: {r: 0.38, g: 0.36, b: 0.31, a: 1}
+    - _DustColor: {r: 0.62, g: 0.55, b: 0.44, a: 1}
+    - _VolumeMin: {r: -0.177, g: -0.012, b: -0.179, a: 0}
+    - _VolumeSize: {r: 0.354, g: 0.348, b: 0.358, a: 0}
+    - _WearColor: {r: 0.26, g: 0.16, b: 0.09, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
