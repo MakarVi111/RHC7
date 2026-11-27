@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: BoneCleanable
+  m_Shader: {fileID: 4800000, guid: 2f903d89f73eb804497ce6af8aff283c, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BoneAO:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BoneAlbedo:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BoneNormal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DirtMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DirtNormal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BoneSmoothness: 0.28
+    - _ClaySmoothness: 0.15
+    - _CleanBoneBlend: 0.94
+    - _CrustSmoothness: 0.08
+    - _DebugMode: 0
+    - _DetailScale: 220
+    - _DirtNormalStrength: 0
+    - _DustOpacity: 0.55
+    - _DustSmoothness: 0.04
+    - _ProceduralDirtBump: 0.15
+    m_Colors:
+    - _ClayColor: {r: 0.25, g: 0.16, b: 0.09, a: 1}
+    - _CleanBoneColor: {r: 0.78, g: 0.74, b: 0.63, a: 1}
+    - _CrackColor: {r: 0.03, g: 0.018, b: 0.01, a: 1}
+    - _CrustColor: {r: 0.12, g: 0.11, b: 0.085, a: 1}
+    - _DustColor: {r: 0.38, g: 0.35, b: 0.29, a: 1}
+    - _FleckColor: {r: 0.54999995, g: 0.5, b: 0.39999998, a: 1}
+    - _WearColor: {r: 0.27999997, g: 0.16999996, b: 0.089999996, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

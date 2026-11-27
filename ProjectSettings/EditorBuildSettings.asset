@@ -6,10 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/CleaningCore.unity
-    guid: 6056ca39e6dfc2e4fb0eada494b28ee6
-  - enabled: 1
-    path: Assets/Scenes/RHC7_SimpleTable.unity
-    guid: e9655c978b6f849488cd10a48f43ede0
+    path: Assets/Scenes/RHC7_PrepGame.unity
+    guid: b286eb36db22d264ca8b39c8ffc0b30a
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0
