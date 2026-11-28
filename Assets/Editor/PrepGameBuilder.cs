@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -208,6 +209,7 @@ public static class PrepGameBuilder
             "Assets/Textures/Notes/NoteChiselHammer.png");
 
         lighting(crateLight);
+        BuildPostProcessing();
         EditorSceneManager.MarkSceneDirty(scene);
         Directory.CreateDirectory("Assets/Scenes");
         EditorSceneManager.SaveScene(scene, scenePath);
@@ -434,6 +436,7 @@ public static class PrepGameBuilder
         public Material oak, oakDark, steel, steelDark, enamel, cream, brass;
         public Material iron, lino, cork, pegboard, cardboard, burlap, plaster;
         public Material paper, rubber, red, jar;
+        public Material photoSkull, photoTrike, photoFemur;
     }
 
     static void BuildRestorationDressing(Transform root, Material floorMat, Material trimMat)
@@ -464,7 +467,13 @@ public static class PrepGameBuilder
                 "Assets/Textures/Paper.png", 0f, 0.08f, Vector2.one),
             rubber = MakeLit("LabRubber", new Color(0.075f, 0.075f, 0.07f), 0f, 0.12f),
             red = MakeLit("LabRed", new Color(0.42f, 0.10f, 0.06f), 0f, 0.28f),
-            jar = MakeLit("LabJarGlass", new Color(0.34f, 0.30f, 0.18f), 0.08f, 0.72f)
+            jar = MakeLit("LabJarGlass", new Color(0.34f, 0.30f, 0.18f), 0.08f, 0.72f),
+            photoSkull = MakeUnlitPhoto("PhotoTrexSkull",
+                "Assets/Textures/Book/BookTrexSkull.png"),
+            photoTrike = MakeUnlitPhoto("PhotoTrikeSkull",
+                "Assets/Textures/Book/BookTrikeSkull.png"),
+            photoFemur = MakeUnlitPhoto("PhotoTrexFemur",
+                "Assets/Textures/Book/BookTrexFemur.png")
         };
 
         // Small anti-fatigue mats in front of the fixed benches keep the
@@ -486,6 +495,55 @@ public static class PrepGameBuilder
         BuildWallClock(root, p);
         BuildCeilingPipe(root, p);
         BuildFloorClutter(root, p);
+        BuildPhotoWall(root, p);
+        BuildElectricalDetails(root, p);
+        BuildFloorScraps(root, p);
+        BuildAmbientDust(root);
+    }
+
+    static void BuildAmbientDust(Transform root)
+    {
+        var dustMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+            "Assets/Materials/DustMote.mat");
+        if (dustMaterial == null) return;
+
+        var go = new GameObject("HallDust");
+        go.transform.SetParent(root, false);
+        go.transform.localPosition = new Vector3(0f, 2.15f, 2.9f);
+
+        var ps = go.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.loop = true;
+        main.playOnAwake = true;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.startLifetime = 16f;
+        main.startSpeed = 0.010f;
+        main.startSize = new ParticleSystem.MinMaxCurve(0.003f, 0.011f);
+        main.startColor = new Color(1f, 0.88f, 0.70f, 0.13f);
+        main.maxParticles = 320;
+        main.gravityModifier = 0.0004f;
+        main.prewarm = true;
+
+        var emission = ps.emission;
+        emission.enabled = true;
+        emission.rateOverTime = 13f;
+
+        var shape = ps.shape;
+        shape.enabled = true;
+        shape.shapeType = ParticleSystemShapeType.Box;
+        shape.scale = new Vector3(11.5f, 3.0f, 6.5f);
+
+        var noise = ps.noise;
+        noise.enabled = true;
+        noise.strength = 0.035f;
+        noise.frequency = 0.12f;
+        noise.scrollSpeed = 0.035f;
+
+        var particleRenderer = go.GetComponent<ParticleSystemRenderer>();
+        particleRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+        particleRenderer.alignment = ParticleSystemRenderSpace.View;
+        particleRenderer.material = dustMaterial;
+        ps.Play();
     }
 
     static void BuildBackWorkbench(Transform root, LabPalette p)
@@ -974,6 +1032,11 @@ public static class PrepGameBuilder
             note.transform.localRotation = Quaternion.Euler(0f, 0f, (i - 1) * 3f);
             Sphere("CorkPin", new Vector3(note.transform.localPosition.x, 2.72f, pz - 0.065f),
                 Vector3.one * 0.013f, i == 1 ? p.red : p.brass, root);
+            var photo = i == 0 ? p.photoSkull : (i == 1 ? p.photoTrike : p.photoFemur);
+            float pw = i == 0 ? 0.18f : (i == 1 ? 0.19f : 0.16f);
+            float ph = i == 0 ? 0.12f : (i == 1 ? 0.135f : 0.14f);
+            AddPhotoQuad(root, new Vector3(cx - 0.30f + i * 0.29f, 2.58f, pz - 0.058f),
+                pw, ph, photo);
         }
         Cube("CorkPencil", new Vector3(cx + 0.36f, 2.32f, pz - 0.06f),
             new Vector3(0.18f, 0.014f, 0.014f), p.red, root, false);
@@ -1050,6 +1113,131 @@ public static class PrepGameBuilder
             float a = t * Mathf.PI * 3.4f;
             lr.SetPosition(i, new Vector3(Mathf.Cos(a) * 0.55f, 0f, Mathf.Sin(a) * 0.22f));
         }
+    }
+
+    static Material MakeUnlitPhoto(string name, string texturePath)
+    {
+        string path = MatDir + "/" + name + ".mat";
+        var shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Unlit/Texture");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        mat.shader = shader;
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(texturePath);
+        if (texture != null) mat.SetTexture("_BaseMap", texture);
+        mat.SetColor("_BaseColor", new Color(0.96f, 0.92f, 0.85f));
+        mat.SetFloat("_Cull", 0f);
+        mat.SetFloat("_Smoothness", 0.08f);
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    static GameObject AddPhotoQuad(Transform parent, Vector3 pos, float width, float height,
+                                   Material photo)
+    {
+        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "PhotoPrint";
+        quad.transform.SetParent(parent, false);
+        quad.transform.localPosition = pos;
+        quad.transform.localScale = new Vector3(width, height, 1f);
+        var renderer = quad.GetComponent<Renderer>();
+        renderer.sharedMaterial = photo;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        Object.DestroyImmediate(quad.GetComponent<Collider>());
+        return quad;
+    }
+
+    static void BuildFramedPhoto(Transform root, string name, Vector3 pos,
+                                 float width, float height, Material photo, LabPalette p)
+    {
+        var g = new GameObject(name).transform;
+        g.SetParent(root, false);
+        g.localPosition = pos;
+
+        Cube("FrameBack", new Vector3(0f, 0f, 0.030f),
+            new Vector3(width + 0.14f, height + 0.14f, 0.050f), p.oakDark, g, false);
+        Cube("FrameMat", new Vector3(0f, 0f, 0.008f),
+            new Vector3(width + 0.07f, height + 0.07f, 0.012f), p.cream, g, false);
+        AddPhotoQuad(g, new Vector3(0f, 0f, -0.006f), width, height, photo);
+        Cube("FrameTop", new Vector3(0f, (height + 0.07f) * 0.5f + 0.035f, 0f),
+            new Vector3(width + 0.18f, 0.070f, 0.055f), p.oakDark, g, false);
+        Cube("FrameBottom", new Vector3(0f, -(height + 0.07f) * 0.5f - 0.035f, 0f),
+            new Vector3(width + 0.18f, 0.070f, 0.055f), p.oakDark, g, false);
+        Cube("FrameLeft", new Vector3(-(width + 0.07f) * 0.5f - 0.035f, 0f, 0f),
+            new Vector3(0.070f, height + 0.18f, 0.055f), p.oakDark, g, false);
+        Cube("FrameRight", new Vector3((width + 0.07f) * 0.5f + 0.035f, 0f, 0f),
+            new Vector3(0.070f, height + 0.18f, 0.055f), p.oakDark, g, false);
+        Cube("FramePlaque", new Vector3(0f, -(height + 0.07f) * 0.5f - 0.115f, -0.004f),
+            new Vector3(width * 0.46f, 0.055f, 0.020f), p.brass, g, false);
+    }
+
+    static void BuildPhotoWall(Transform root, LabPalette p)
+    {
+        BuildFramedPhoto(root, "TrexReferencePhoto",
+            new Vector3(-4.85f, 3.45f, 6.42f), 1.05f, 0.70f, p.photoSkull, p);
+        BuildFramedPhoto(root, "TrikeReferencePhoto",
+            new Vector3(4.82f, 3.92f, 6.42f), 0.92f, 0.65f, p.photoTrike, p);
+    }
+
+    static void BuildElectricalDetails(Transform root, LabPalette p)
+    {
+        var conduit = Cylinder("WallConduit", new Vector3(0f, 1.47f, 6.56f),
+            0.018f, 15.2f, p.steelDark, root);
+        conduit.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        for (int i = -3; i <= 3; i++)
+        {
+            float x = i * 2.15f;
+            Cube("ConduitClamp", new Vector3(x, 1.47f, 6.55f),
+                new Vector3(0.035f, 0.045f, 0.060f), p.steel, root, false);
+        }
+        foreach (float x in new[] { -6.2f, -2.1f, 2.1f, 6.2f })
+        {
+            Cube("JunctionBox", new Vector3(x, 1.47f, 6.53f),
+                new Vector3(0.15f, 0.20f, 0.065f), p.steelDark, root, false);
+            Cube("JunctionLid", new Vector3(x, 1.47f, 6.495f),
+                new Vector3(0.11f, 0.16f, 0.012f), p.steel, root, false);
+        }
+
+        foreach (float x in new[] { -1.10f, 3.05f })
+        {
+            Cube("WallOutlet", new Vector3(x, 0.56f, 6.545f),
+                new Vector3(0.11f, 0.15f, 0.025f), p.cream, root, false);
+            for (int i = -1; i <= 1; i += 2)
+            {
+                var socket = VCylinder("OutletSocket",
+                    new Vector3(x + i * 0.025f, 0.56f, 6.53f),
+                    0.011f, 0.012f, p.steelDark, root);
+                socket.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+        }
+
+        Cube("LightSwitch", new Vector3(-7.55f, 1.56f, 6.545f),
+            new Vector3(0.10f, 0.15f, 0.025f), p.cream, root, false);
+        Cube("LightSwitchToggle", new Vector3(-7.55f, 1.56f, 6.525f),
+            new Vector3(0.028f, 0.070f, 0.018f), p.brass, root, false);
+    }
+
+    static void BuildFloorScraps(Transform root, LabPalette p)
+    {
+        var paperA = Cube("FloorPaper", new Vector3(-1.35f, 0.006f, 3.62f),
+            new Vector3(0.13f, 0.002f, 0.09f), p.paper, root, false);
+        paperA.transform.localRotation = Quaternion.Euler(0f, 24f, 0f);
+        var paperB = Cube("FloorPaper", new Vector3(3.55f, 0.006f, 3.10f),
+            new Vector3(0.10f, 0.002f, 0.14f), p.paper, root, false);
+        paperB.transform.localRotation = Quaternion.Euler(0f, -38f, 0f);
+        var rag = Cube("FloorRag", new Vector3(1.55f, 0.007f, 3.35f),
+            new Vector3(0.22f, 0.010f, 0.16f), p.burlap, root, false);
+        rag.transform.localRotation = Quaternion.Euler(0f, 17f, 0f);
+
+        var pencil = Cylinder("FloorPencil", new Vector3(2.35f, 0.012f, 3.75f),
+            0.007f, 0.17f, p.oak, root);
+        pencil.transform.localRotation = Quaternion.Euler(0f, 32f, 90f);
+        Cube("PencilTip", new Vector3(2.42f, 0.012f, 3.80f),
+            new Vector3(0.025f, 0.012f, 0.012f), p.steelDark, root, false);
     }
 
     static GameObject ShellCube(string name, Vector3 pos, Vector3 scale, Material mat, Transform parent)
@@ -1831,6 +2019,10 @@ public static class PrepGameBuilder
         cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.075f, 0.065f, 0.055f);
         go.AddComponent<AudioListener>();
+        var camData = cam.GetUniversalAdditionalCameraData();
+        camData.renderPostProcessing = true;
+        camData.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+        camData.antialiasingQuality = AntialiasingQuality.High;
         cam.transform.position = new Vector3(2.00f, 3.80f, -0.90f);
         cam.transform.rotation = Quaternion.LookRotation(
             (new Vector3(2.30f, 1.00f, 0.42f) - cam.transform.position).normalized, Vector3.up);
@@ -1878,6 +2070,54 @@ public static class PrepGameBuilder
         l.intensity = intensity;
         l.range = range;
         l.shadows = shadows ? LightShadows.Soft : LightShadows.None;
+    }
+
+    static void BuildPostProcessing()
+    {
+        // A restrained photographic grade: ACES, warm highlights, light bloom,
+        // a soft vignette and fine grain. It makes the hall read as a 1930s
+        // photographic plate rather than a flat real-time render.
+        const string profilePath = "Assets/Settings/RHC7_HallPost.asset";
+        if (AssetDatabase.LoadAssetAtPath<VolumeProfile>(profilePath) != null)
+            AssetDatabase.DeleteAsset(profilePath);
+
+        var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+        AssetDatabase.CreateAsset(profile, profilePath);
+
+        var tone = profile.Add<Tonemapping>(true);
+        tone.mode.Override(TonemappingMode.ACES);
+
+        var color = profile.Add<ColorAdjustments>(true);
+        color.postExposure.Override(0.08f);
+        color.contrast.Override(8f);
+        color.saturation.Override(-8f);
+        color.colorFilter.Override(new Color(1.02f, 0.98f, 0.92f));
+
+        var bloom = profile.Add<Bloom>(true);
+        bloom.threshold.Override(1.05f);
+        bloom.intensity.Override(0.26f);
+        bloom.scatter.Override(0.66f);
+        bloom.tint.Override(new Color(1f, 0.88f, 0.72f));
+
+        var vignette = profile.Add<Vignette>(true);
+        vignette.intensity.Override(0.20f);
+        vignette.smoothness.Override(0.48f);
+        vignette.color.Override(new Color(0.03f, 0.02f, 0.015f));
+
+        var grain = profile.Add<FilmGrain>(true);
+        grain.type.Override(FilmGrainLookup.Thin1);
+        grain.intensity.Override(0.15f);
+        grain.response.Override(0.80f);
+
+        EditorUtility.SetDirty(profile);
+        AssetDatabase.SaveAssets();
+
+        var go = new GameObject("HallPostFX");
+        var volume = go.AddComponent<Volume>();
+        volume.isGlobal = true;
+        volume.priority = 1f;
+        volume.weight = 1f;
+        volume.sharedProfile = profile;
     }
 
     // ------------------------------------------------------------- bones

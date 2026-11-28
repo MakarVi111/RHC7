@@ -768,6 +768,29 @@ public class GameFlow : MonoBehaviour
         }
     }
 
+    static void DrawPhotoPlate(Rect rect, Texture2D photo, float border)
+    {
+        if (photo == null) return;
+        float aspect = photo.width / (float)Mathf.Max(1, photo.height);
+        float w = rect.width;
+        float h = rect.height;
+        if (w / h > aspect) w = h * aspect;
+        else h = w / aspect;
+        var fit = new Rect(rect.x + (rect.width - w) * 0.5f,
+                           rect.y + (rect.height - h) * 0.5f, w, h);
+
+        GUI.color = new Color(0.20f, 0.14f, 0.09f, 0.92f);
+        GUI.DrawTexture(new Rect(fit.x - border, fit.y - border,
+            fit.width + border * 2f, fit.height + border * 2f), Texture2D.whiteTexture);
+        GUI.color = new Color(0.93f, 0.88f, 0.77f, 1f);
+        GUI.DrawTexture(new Rect(fit.x - 1f, fit.y - 1f,
+            fit.width + 2f, fit.height + 2f), Texture2D.whiteTexture);
+        // A warm print tone keeps the archival photographs inside the paper palette.
+        GUI.color = new Color(0.97f, 0.94f, 0.87f, 1f);
+        GUI.DrawTexture(fit, photo, ScaleMode.StretchToFill);
+        GUI.color = Color.white;
+    }
+
     void DrawBookPage(Rect page, SpeciesDefinition species)
     {
         float pad = 26f;
@@ -782,18 +805,17 @@ public class GameFlow : MonoBehaviour
         GUI.Label(new Rect(page.x + pad, page.y + 31f, page.width - pad * 2, 34f),
             species.pageTitle, bookTitleStyle);
 
-        float artH = species.extraArt != null ? 128f : 190f;
+        float artH = species.extraArt != null ? 158f : 190f;
         var artRect = new Rect(page.x + pad, page.y + 70f,
                                page.width - pad * 2, artH);
-        if (species.mainArt != null)
-            GUI.DrawTexture(artRect, species.mainArt, ScaleMode.ScaleToFit);
+        DrawPhotoPlate(artRect, species.mainArt, 4f);
         float descriptionY = page.y + 266f;
         if (species.extraArt != null)
         {
-            var extra = new Rect(page.x + page.width * 0.30f, artRect.yMax + 2f,
-                                 page.width * 0.40f, 76f);
-            GUI.DrawTexture(extra, species.extraArt, ScaleMode.ScaleToFit);
-            descriptionY = page.y + 288f;
+            var extra = new Rect(page.x + page.width * 0.32f, artRect.yMax + 3f,
+                                 page.width * 0.36f, 90f);
+            DrawPhotoPlate(extra, species.extraArt, 3f);
+            descriptionY = page.y + 340f;
         }
         GUI.Label(new Rect(page.x + pad, descriptionY,
                            page.width - pad * 2, 76f), species.description, bookBodyStyle);

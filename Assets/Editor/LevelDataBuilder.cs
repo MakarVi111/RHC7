@@ -44,12 +44,12 @@ public static class LevelDataBuilder
             "ХИЩНЫЕ ДИНОЗАВРЫ", "ТИРАННОЗАВР",
             "Крупный череп с тяжёлой челюстью и зубами.\n" +
             "Длинная массивная бедренная кость.",
-            "Assets/Textures/Notes/NoteTrexSkull.png",
-            "Assets/Textures/Notes/NoteTrexFemur.png");
+            "Assets/Textures/Book/BookTrexSkull.png",
+            "Assets/Textures/Book/BookTrexFemur.png");
         var trike = EnsureSpecies(TrikeSpeciesPath, "triceratops", "ТРИЦЕРАТОПС",
             DinoSpecies.Triceratops, "РОГАТЫЕ ДИНОЗАВРЫ", "ТРИЦЕРАТОПС",
             "Широкий костяной воротник\nи три рога на морде.",
-            "Assets/Textures/Notes/NoteTrikeSkull.png", null);
+            "Assets/Textures/Book/BookTrikeSkull.png", null);
 
         var trexSkull = EnsureSpecimen("TrexSkull", "trex_skull", "Череп",
             "Крупный череп с тяжёлой челюстью и зубами — тираннозавр.",

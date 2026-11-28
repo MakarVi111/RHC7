@@ -89,8 +89,8 @@
             "eyebrow": "ХИЩНЫЕ ДИНОЗАВРЫ",
             "title": "ТИРАННОЗАВР",
             "description": "Крупный череп с тяжёлой челюстью и зубами.\nДлинная массивная бедренная кость.",
-            "mainArt": "Assets/Textures/Notes/NoteTrexSkull.png",
-            "extraArt": "Assets/Textures/Notes/NoteTrexFemur.png"
+            "mainArt": "Assets/Textures/Book/BookTrexSkull.png",
+            "extraArt": "Assets/Textures/Book/BookTrexFemur.png"
         },
         {
             "id": "triceratops",
@@ -99,7 +99,7 @@
             "eyebrow": "РОГАТЫЕ ДИНОЗАВРЫ",
             "title": "ТРИЦЕРАТОПС",
             "description": "Широкий костяной воротник\nи три рога на морде.",
-            "mainArt": "Assets/Textures/Notes/NoteTrikeSkull.png",
+            "mainArt": "Assets/Textures/Book/BookTrikeSkull.png",
             "extraArt": ""
         }
     ]
