@@ -1482,6 +1482,9 @@ public static class PrepGameBuilder
             hayMat.SetTexture("_BaseMap", hayTexture);
             hayMat.SetTextureScale("_BaseMap", new Vector2(2f, 1f));
             hayMat.SetColor("_BaseColor", new Color(0.95f, 0.90f, 0.78f));
+            // Keep the legacy colour in sync too; otherwise Unity rewrites it
+            // on the next build and leaves a one-line asset diff behind.
+            hayMat.SetColor("_Color", new Color(0.95f, 0.90f, 0.78f));
             hayMat.SetFloat("_Smoothness", 0.05f);
         }
         Cube("HayBed", new Vector3(0f, 0.095f, 0f), new Vector3(1.86f, 0.025f, 1.16f), hayMat, crate, false);
