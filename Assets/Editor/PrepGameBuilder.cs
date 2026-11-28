@@ -29,8 +29,7 @@ public static class PrepGameBuilder
     {
         PrepareAssets();
         LevelDataBuilder.EnsureBaseLevel();
-        EditorApplication.delayCall += () =>
-            BuildLevel(LevelDataBuilder.BaseLevelPath, ScenePath, true);
+        BuildLevel(LevelDataBuilder.BaseLevelPath, ScenePath, true);
     }
 
     [MenuItem("Tools/RHC7/Build Data Demo (4 bones)")]
@@ -38,8 +37,7 @@ public static class PrepGameBuilder
     {
         PrepareAssets();
         LevelDataBuilder.EnsureDemoLevel();
-        EditorApplication.delayCall += () =>
-            BuildLevel(LevelDataBuilder.DemoLevelPath, DemoScenePath, false);
+        BuildLevel(LevelDataBuilder.DemoLevelPath, DemoScenePath, false);
     }
 
     [MenuItem("Tools/RHC7/Build Config Validation Demo")]
@@ -47,7 +45,7 @@ public static class PrepGameBuilder
     {
         PrepareAssets();
         LevelDataBuilder.EnsureInvalidLevel();
-        EditorApplication.delayCall += BuildValidationScene;
+        BuildValidationScene();
     }
 
     [MenuItem("Tools/RHC7/Build Invalid Data Game (safe subset)")]
@@ -55,15 +53,13 @@ public static class PrepGameBuilder
     {
         PrepareAssets();
         LevelDataBuilder.EnsureInvalidLevel();
-        EditorApplication.delayCall += () =>
-            BuildLevel(LevelDataBuilder.InvalidLevelPath, InvalidGameScenePath, false);
+        BuildLevel(LevelDataBuilder.InvalidLevelPath, InvalidGameScenePath, false);
     }
 
     static void PrepareAssets()
     {
         EnsureFolders();
         ConfigureBoneImporters();
-        EnsurePeriodTextures();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
     }
@@ -114,17 +110,21 @@ public static class PrepGameBuilder
             return;
         }
 
+        // Direct builds (tests, menu rebuilds) must regenerate the procedural
+        // surface textures the same way the menu entry point does.
+        EnsurePeriodTextures();
+
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         RenderSettings.ambientMode = AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.34f, 0.33f, 0.30f);
+        RenderSettings.ambientLight = new Color(0.42f, 0.40f, 0.35f);
         RenderSettings.fog = false;
 
         var floorMat = MakeTexturedLit("RoomFloor", new Color(0.95f, 0.91f, 0.86f),
-            TexDir + "/Parquet.png", 0f, 0.30f, new Vector2(4f, 3.2f));
+            TexDir + "/Parquet.png", 0f, 0.30f, new Vector2(8f, 6f));
         var wallMat = MakeTexturedLit("RoomWall", new Color(0.80f, 0.76f, 0.68f),
-            TexDir + "/Plaster.png", 0f, 0.08f, new Vector2(6f, 3f));
+            TexDir + "/Plaster.png", 0f, 0.08f, new Vector2(10f, 4f));
         var trimMat = MakeTexturedLit("RoomTrim", new Color(0.96f, 0.90f, 0.82f),
-            "Assets/Textures/WoodDark.png", 0f, 0.32f, new Vector2(2f, 1f));
+            "Assets/Textures/WoodDark.png", 0f, 0.32f, new Vector2(3f, 1f));
         var tableMat = MakeTexturedLit("PrepWood", new Color(1f, 0.94f, 0.86f),
             "Assets/Textures/Wood.png", 0f, 0.34f, new Vector2(1.5f, 1.5f));
         var darkMat = MakeTexturedLit("CrateWood", new Color(0.96f, 0.91f, 0.85f),
@@ -188,7 +188,9 @@ public static class PrepGameBuilder
         flow.bones = bones.ToArray();
         flow.cleaning = cleaning;
         flow.tools = toolComp;
-        flow.prepViewFov = 50f;
+        flow.prepViewPosition = new Vector3(0.24f, 1.88f, -1.85f);
+        flow.prepViewTarget = new Vector3(0.24f, 1.12f, 0.95f);
+        flow.prepViewFov = 52f;
         toolComp.cleaning = cleaning;
         toolComp.cam = cam;
 
@@ -262,17 +264,17 @@ public static class PrepGameBuilder
 
     static void BuildRoom(Material floorMat, Material wallMat, Material trimMat)
     {
-        // A full museum hall rather than a close-up box: 10 x 8 m, 4.6 m high.
-        // Gameplay furniture keeps its tested positions; only the architecture
-        // and period dressing move outward.
-        const float halfW = 5f;
-        const float backZ = 4.4f;
-        const float frontZ = -3.6f;
-        const float height = 4.6f;
-        const float midZ = 0.4f;
-        const float depth = 8f;
+        // A working restoration hall rather than a close-up box: 16.4 x 11.8 m,
+        // 5.8 m high. Gameplay furniture keeps its tested positions; the extra
+        // space is used for preparation benches, storage and extraction gear.
+        const float halfW = 8.2f;
+        const float backZ = 6.6f;
+        const float frontZ = -5.2f;
+        const float height = 5.8f;
+        const float midZ = 0.7f;
+        const float depth = 11.8f;
 
-        var root = new GameObject("MuseumHall1930s").transform;
+        var root = new GameObject("RestorationHall1930s").transform;
         var panelMat = MakeTexturedLit("WallPanelOak", new Color(0.91f, 0.85f, 0.76f),
             "Assets/Textures/Wood.png", 0f, 0.30f, new Vector2(1.5f, 1f));
         var ceilingMat = MakeTexturedLit("CeilingPlaster", new Color(0.67f, 0.65f, 0.60f),
@@ -281,126 +283,773 @@ public static class PrepGameBuilder
         var bronze = MakeLit("RoomBronze", new Color(0.13f, 0.105f, 0.07f), 0.72f, 0.38f);
         var iron = MakeLit("RadiatorIron", new Color(0.19f, 0.18f, 0.16f), 0.68f, 0.32f);
         var frameMat = MakeLit("WindowSteel", new Color(0.12f, 0.13f, 0.12f), 0.70f, 0.42f);
-        var windowMat = MakeLit("WindowGlow", new Color(0.74f, 0.77f, 0.74f), 0f, 0.18f,
-            new Color(0.48f, 0.51f, 0.47f) * 1.25f);
+        var windowMat = MakeTexturedLit("WindowGlow", new Color(0.92f, 0.94f, 0.93f),
+            TexDir + "/Sky.png", 0f, 0.18f, Vector2.one);
+        var skyTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + "/Sky.png");
+        if (skyTexture != null)
+        {
+            windowMat.EnableKeyword("_EMISSION");
+            windowMat.SetTexture("_EmissionMap", skyTexture);
+            windowMat.SetColor("_EmissionColor", new Color(0.72f, 0.78f, 0.80f));
+            windowMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+        }
         var opal = MakeLit("LampGlow", new Color(0.90f, 0.82f, 0.66f), 0f, 0.12f,
             new Color(1.0f, 0.72f, 0.38f) * 1.15f);
 
         // The shell does not cast shadows: the directional daylight still fills
         // the room through the (visually solid) roof and window openings.
-        ShellCube("Floor", new Vector3(0f, -0.06f, midZ), new Vector3(10f, 0.12f, depth), floorMat, root);
+        ShellCube("Floor", new Vector3(0f, -0.06f, midZ), new Vector3(halfW * 2f, 0.12f, depth), floorMat, root);
         ShellCube("BackWall", new Vector3(0f, height * 0.5f, backZ + 0.08f),
-            new Vector3(10f, height, 0.16f), wallMat, root);
+            new Vector3(halfW * 2f, height, 0.16f), wallMat, root);
         ShellCube("FrontWall", new Vector3(0f, height * 0.5f, frontZ - 0.08f),
-            new Vector3(10f, height, 0.16f), wallMat, root);
+            new Vector3(halfW * 2f, height, 0.16f), wallMat, root);
         ShellCube("LeftWall", new Vector3(-halfW - 0.08f, height * 0.5f, midZ),
             new Vector3(0.16f, height, depth), wallMat, root);
         ShellCube("RightWall", new Vector3(halfW + 0.08f, height * 0.5f, midZ),
             new Vector3(0.16f, height, depth), wallMat, root);
         ShellCube("Ceiling", new Vector3(0f, height + 0.06f, midZ),
-            new Vector3(10f, 0.12f, depth), ceilingMat, root);
+            new Vector3(halfW * 2f, 0.12f, depth), ceilingMat, root);
 
         // Oak wainscot, inset panels, baseboards and chair rails on all walls.
-        Cube("WainscotBack", new Vector3(0f, 0.58f, backZ - 0.06f),
-            new Vector3(10f, 1.16f, 0.08f), trimMat, root, false);
-        Cube("WainscotFront", new Vector3(0f, 0.58f, frontZ + 0.06f),
-            new Vector3(10f, 1.16f, 0.08f), trimMat, root, false);
-        Cube("ChairRailBack", new Vector3(0f, 1.17f, backZ - 0.14f),
-            new Vector3(10f, 0.09f, 0.14f), trimMat, root, false);
-        Cube("ChairRailFront", new Vector3(0f, 1.17f, frontZ + 0.14f),
-            new Vector3(10f, 0.09f, 0.14f), trimMat, root, false);
-        Cube("BaseboardBack", new Vector3(0f, 0.09f, backZ - 0.13f),
-            new Vector3(10f, 0.18f, 0.10f), bronze, root, false);
-        Cube("BaseboardFront", new Vector3(0f, 0.09f, frontZ + 0.13f),
-            new Vector3(10f, 0.18f, 0.10f), bronze, root, false);
+        Cube("WainscotBack", new Vector3(0f, 0.65f, backZ - 0.06f),
+            new Vector3(halfW * 2f, 1.30f, 0.08f), trimMat, root, false);
+        Cube("WainscotFront", new Vector3(0f, 0.65f, frontZ + 0.06f),
+            new Vector3(halfW * 2f, 1.30f, 0.08f), trimMat, root, false);
+        Cube("ChairRailBack", new Vector3(0f, 1.31f, backZ - 0.14f),
+            new Vector3(halfW * 2f, 0.10f, 0.14f), trimMat, root, false);
+        Cube("ChairRailFront", new Vector3(0f, 1.31f, frontZ + 0.14f),
+            new Vector3(halfW * 2f, 0.10f, 0.14f), trimMat, root, false);
+        Cube("BaseboardBack", new Vector3(0f, 0.10f, backZ - 0.13f),
+            new Vector3(halfW * 2f, 0.20f, 0.10f), bronze, root, false);
+        Cube("BaseboardFront", new Vector3(0f, 0.10f, frontZ + 0.13f),
+            new Vector3(halfW * 2f, 0.20f, 0.10f), bronze, root, false);
 
-        for (int i = 0; i < 8; i++)
+        const int backPanels = 12;
+        const float backSpacing = 1.34f;
+        for (int i = 0; i < backPanels; i++)
         {
-            float x = -4.375f + i * 1.25f;
-            Cube("OakPanelBack", new Vector3(x, 0.62f, backZ - 0.115f),
-                new Vector3(1.02f, 0.74f, 0.035f), panelMat, root, false);
+            float x = -(backPanels - 1) * backSpacing * 0.5f + i * backSpacing;
+            Cube("OakPanelBack", new Vector3(x, 0.70f, backZ - 0.115f),
+                new Vector3(1.18f, 0.86f, 0.035f), panelMat, root, false);
         }
-        for (int i = 0; i <= 8; i++)
+        for (int i = 0; i <= backPanels; i++)
         {
-            float x = -5f + i * 1.25f;
-            Cube("OakStileBack", new Vector3(x, 0.61f, backZ - 0.14f),
-                new Vector3(0.055f, 1.02f, 0.05f), trimMat, root, false);
+            float x = -halfW + i * (halfW * 2f / backPanels);
+            Cube("OakStileBack", new Vector3(x, 0.69f, backZ - 0.14f),
+                new Vector3(0.060f, 1.16f, 0.05f), trimMat, root, false);
         }
 
         for (int side = -1; side <= 1; side += 2)
         {
             float x = side * halfW;
-            Cube("WainscotSide", new Vector3(x - side * 0.06f, 0.58f, midZ),
-                new Vector3(0.08f, 1.16f, depth), trimMat, root, false);
-            Cube("ChairRailSide", new Vector3(x - side * 0.14f, 1.17f, midZ),
-                new Vector3(0.14f, 0.09f, depth), trimMat, root, false);
-            Cube("BaseboardSide", new Vector3(x - side * 0.13f, 0.09f, midZ),
-                new Vector3(0.10f, 0.18f, depth), bronze, root, false);
-            for (int i = 0; i < 6; i++)
+            Cube("WainscotSide", new Vector3(x - side * 0.06f, 0.65f, midZ),
+                new Vector3(0.08f, 1.30f, depth), trimMat, root, false);
+            Cube("ChairRailSide", new Vector3(x - side * 0.14f, 1.31f, midZ),
+                new Vector3(0.14f, 0.10f, depth), trimMat, root, false);
+            Cube("BaseboardSide", new Vector3(x - side * 0.13f, 0.10f, midZ),
+                new Vector3(0.10f, 0.20f, depth), bronze, root, false);
+            const int sidePanels = 9;
+            for (int i = 0; i < sidePanels; i++)
             {
-                float z = frontZ + (i + 0.5f) * (depth / 6f);
-                Cube("OakPanelSide", new Vector3(x - side * 0.115f, 0.62f, z),
-                    new Vector3(0.035f, 0.74f, 1.08f), panelMat, root, false);
+                float z = frontZ + (i + 0.5f) * (depth / sidePanels);
+                Cube("OakPanelSide", new Vector3(x - side * 0.115f, 0.70f, z),
+                    new Vector3(0.035f, 0.86f, 1.02f), panelMat, root, false);
             }
-            for (int i = 0; i <= 6; i++)
+            for (int i = 0; i <= sidePanels; i++)
             {
-                float z = frontZ + i * (depth / 6f);
-                Cube("OakStileSide", new Vector3(x - side * 0.14f, 0.61f, z),
-                    new Vector3(0.05f, 1.02f, 0.055f), trimMat, root, false);
+                float z = frontZ + i * (depth / sidePanels);
+                Cube("OakStileSide", new Vector3(x - side * 0.14f, 0.69f, z),
+                    new Vector3(0.05f, 1.16f, 0.060f), trimMat, root, false);
             }
         }
 
         // Stepped plaster cornice and a dark picture rail: restrained Art Deco.
         for (int i = 0; i < 3; i++)
         {
-            float y = 4.18f + i * 0.13f;
+            float y = height - 0.48f + i * 0.14f;
             float d = 0.12f + i * 0.07f;
             Cube("CorniceBack", new Vector3(0f, y, backZ - d * 0.5f),
-                new Vector3(10f, 0.12f, d), ceilingMat, root, false);
+                new Vector3(halfW * 2f, 0.13f, d), ceilingMat, root, false);
             Cube("CorniceFront", new Vector3(0f, y, frontZ + d * 0.5f),
-                new Vector3(10f, 0.12f, d), ceilingMat, root, false);
+                new Vector3(halfW * 2f, 0.13f, d), ceilingMat, root, false);
             for (int side = -1; side <= 1; side += 2)
                 Cube("CorniceSide", new Vector3(side * (halfW - d * 0.5f), y, midZ),
-                    new Vector3(d, 0.12f, depth), ceilingMat, root, false);
+                    new Vector3(d, 0.13f, depth), ceilingMat, root, false);
         }
-        Cube("PictureRailBack", new Vector3(0f, 4.04f, backZ - 0.07f),
-            new Vector3(10f, 0.06f, 0.10f), trimMat, root, false);
+        Cube("PictureRailBack", new Vector3(0f, height - 0.72f, backZ - 0.07f),
+            new Vector3(halfW * 2f, 0.065f, 0.10f), trimMat, root, false);
         for (int side = -1; side <= 1; side += 2)
-            Cube("PictureRailSide", new Vector3(side * (halfW - 0.07f), 4.04f, midZ),
-                new Vector3(0.10f, 0.06f, depth), trimMat, root, false);
+            Cube("PictureRailSide", new Vector3(side * (halfW - 0.07f), height - 0.72f, midZ),
+                new Vector3(0.10f, 0.065f, depth), trimMat, root, false);
 
-        // Fluted pilasters between the tall windows.
-        foreach (float x in new[] { -4.62f, -1.52f, 1.52f, 4.62f })
+        // Fluted pilasters between the tall workshop windows.
+        foreach (float x in new[] { -7.65f, -4.80f, -1.60f, 1.60f, 4.80f, 7.65f })
         {
-            Cube("Pilaster", new Vector3(x, 2.65f, backZ - 0.10f),
-                new Vector3(0.18f, 2.56f, 0.12f), trimMat, root, false);
-            Cube("PilasterBase", new Vector3(x, 1.31f, backZ - 0.13f),
-                new Vector3(0.30f, 0.14f, 0.18f), trimMat, root, false);
-            Cube("PilasterCapital", new Vector3(x, 3.96f, backZ - 0.13f),
-                new Vector3(0.32f, 0.14f, 0.18f), trimMat, root, false);
+            Cube("Pilaster", new Vector3(x, 3.24f, backZ - 0.10f),
+                new Vector3(0.20f, 3.56f, 0.12f), trimMat, root, false);
+            Cube("PilasterBase", new Vector3(x, 1.44f, backZ - 0.13f),
+                new Vector3(0.34f, 0.16f, 0.19f), trimMat, root, false);
+            Cube("PilasterCapital", new Vector3(x, 5.06f, backZ - 0.13f),
+                new Vector3(0.36f, 0.16f, 0.19f), trimMat, root, false);
             for (int f = -1; f <= 1; f++)
-                Cube("PilasterFlute", new Vector3(x + f * 0.045f, 2.65f, backZ - 0.17f),
-                    new Vector3(0.012f, 2.30f, 0.018f), brass, root, false);
+                Cube("PilasterFlute", new Vector3(x + f * 0.052f, 3.24f, backZ - 0.17f),
+                    new Vector3(0.013f, 3.20f, 0.018f), brass, root, false);
         }
 
-        foreach (float x in new[] { -3.05f, 0f, 3.05f })
+        foreach (float x in new[] { -6.40f, -3.20f, 0f, 3.20f, 6.40f })
+            BuildPeriodWindow(root, x, backZ, trimMat, frameMat, windowMat,
+                3.35f, 1.80f, 3.10f);
+        BuildRadiator(root, -6.40f, backZ - 0.46f, iron);
+        BuildRadiator(root, 0f, backZ - 0.46f, iron);
+        BuildRadiator(root, 6.40f, backZ - 0.46f, iron);
+
+        // Heavy oak ceiling beams break up the increased height.
+        foreach (float z in new[] { -2.20f, 1.25f, 4.70f })
         {
-            BuildPeriodWindow(root, x, backZ, trimMat, frameMat, windowMat);
-            BuildRadiator(root, x, backZ - 0.34f, iron);
+            Cube("CeilingBeam", new Vector3(0f, height - 0.26f, z),
+                new Vector3(halfW * 2f, 0.30f, 0.36f), trimMat, root, false);
+            Cube("BeamIronStrap", new Vector3(0f, height - 0.43f, z),
+                new Vector3(halfW * 2f, 0.035f, 0.08f), bronze, root, false);
         }
 
-        BuildPeriodDoor(root, -halfW, 2.35f, trimMat, panelMat, brass, windowMat, bronze);
-        BuildPendant(root, new Vector3(0.05f, 3.12f, -0.05f), brass, opal);
-        BuildPendant(root, new Vector3(-2.25f, 3.12f, 0.65f), brass, opal);
+        BuildPeriodDoor(root, -halfW, 3.30f, trimMat, panelMat, brass, windowMat, bronze);
+        BuildPendant(root, new Vector3(0.10f, 2.95f, 0.45f), brass, opal, height);
+        BuildPendant(root, new Vector3(2.35f, 2.95f, 0.55f), brass, opal, height);
+        BuildPendant(root, new Vector3(-2.20f, 2.95f, 0.60f), brass, opal, height);
+        BuildPendant(root, new Vector3(0.80f, 3.05f, 4.65f), brass, opal, height);
 
-        Cube("MuseumPlaque", new Vector3(3.05f, 3.91f, backZ - 0.15f),
-            new Vector3(2.25f, 0.34f, 0.05f), bronze, root, false);
-        AddWallText(root, "MuseumPlaqueTitle", "РХЦ-7",
-            new Vector3(3.05f, 3.965f, backZ - 0.185f), Quaternion.identity,
-            0.040f, new Color(0.88f, 0.80f, 0.62f));
-        AddWallText(root, "MuseumPlaqueSubtitle", "ПАЛЕОНТОЛОГИЯ · 1934",
-            new Vector3(3.05f, 3.845f, backZ - 0.185f), Quaternion.identity,
+        Cube("WorkshopPlaque", new Vector3(0.60f, height - 0.56f, backZ - 0.15f),
+            new Vector3(6.60f, 0.18f, 0.05f), bronze, root, false);
+        AddWallText(root, "WorkshopPlaqueTitle", "РЕСТАВРАЦИОННАЯ МАСТЕРСКАЯ · РХЦ-7",
+            new Vector3(0.60f, height - 0.56f, backZ - 0.185f), Quaternion.identity,
             0.018f, new Color(0.88f, 0.80f, 0.62f));
+
+        BuildRestorationDressing(root, floorMat, trimMat);
+    }
+
+    // ------------------------------------------------- restoration dressing
+
+    sealed class LabPalette
+    {
+        public Material oak, oakDark, steel, steelDark, enamel, cream, brass;
+        public Material iron, lino, cork, pegboard, cardboard, burlap, plaster;
+        public Material paper, rubber, red, jar;
+    }
+
+    static void BuildRestorationDressing(Transform root, Material floorMat, Material trimMat)
+    {
+        var p = new LabPalette
+        {
+            oak = MakeTexturedLit("LabOak", new Color(0.93f, 0.86f, 0.75f),
+                "Assets/Textures/Wood.png", 0f, 0.36f, new Vector2(1.7f, 1.1f)),
+            oakDark = MakeTexturedLit("LabOakDark", new Color(0.66f, 0.60f, 0.52f),
+                "Assets/Textures/WoodDark.png", 0f, 0.30f, new Vector2(2f, 1f)),
+            steel = MakeLit("LabSteel", new Color(0.41f, 0.43f, 0.41f), 0.72f, 0.50f),
+            steelDark = MakeLit("LabSteelDark", new Color(0.15f, 0.16f, 0.15f), 0.62f, 0.34f),
+            enamel = MakeLit("LabEnamelGreen", new Color(0.27f, 0.33f, 0.26f), 0.12f, 0.42f),
+            cream = MakeLit("LabCream", new Color(0.78f, 0.73f, 0.60f), 0.04f, 0.34f),
+            brass = MakeLit("LabBrass", new Color(0.52f, 0.37f, 0.17f), 0.82f, 0.48f),
+            iron = MakeLit("LabIron", new Color(0.18f, 0.17f, 0.15f), 0.66f, 0.30f),
+            lino = MakeTexturedLit("LabLino", new Color(0.62f, 0.60f, 0.51f),
+                TexDir + "/Lino.png", 0f, 0.22f, new Vector2(4f, 3f)),
+            cork = MakeTexturedLit("LabCork", new Color(0.88f, 0.76f, 0.56f),
+                TexDir + "/Cork.png", 0f, 0.06f, Vector2.one),
+            pegboard = MakeTexturedLit("LabPegboard", new Color(0.88f, 0.80f, 0.64f),
+                TexDir + "/Pegboard.png", 0f, 0.14f, new Vector2(1.2f, 0.9f)),
+            cardboard = MakeLit("LabCardboard", new Color(0.52f, 0.40f, 0.25f), 0f, 0.06f),
+            burlap = MakeLit("LabBurlap", new Color(0.55f, 0.46f, 0.30f), 0f, 0.08f),
+            plaster = MakeTexturedLit("LabPlasterJacket", new Color(0.84f, 0.79f, 0.66f),
+                TexDir + "/Plaster.png", 0f, 0.14f, new Vector2(2f, 2f)),
+            paper = MakeTexturedLit("LabPaper", new Color(0.98f, 0.95f, 0.86f),
+                "Assets/Textures/Paper.png", 0f, 0.08f, Vector2.one),
+            rubber = MakeLit("LabRubber", new Color(0.075f, 0.075f, 0.07f), 0f, 0.12f),
+            red = MakeLit("LabRed", new Color(0.42f, 0.10f, 0.06f), 0f, 0.28f),
+            jar = MakeLit("LabJarGlass", new Color(0.34f, 0.30f, 0.18f), 0.08f, 0.72f)
+        };
+
+        // Small anti-fatigue mats in front of the fixed benches keep the
+        // parquet visible while still reading as a working restoration floor.
+        Cube("BackBenchMat", new Vector3(0.60f, 0.006f, 4.55f),
+            new Vector3(2.10f, 0.012f, 0.62f), p.lino, root, false);
+        Cube("LeftBenchMat", new Vector3(-5.90f, 0.006f, 3.95f),
+            new Vector3(1.50f, 0.012f, 0.55f), p.lino, root, false);
+
+        BuildBackWorkbench(root, p);
+        BuildSpecimenCabinet(root, p);
+        BuildStorageShelves(root, p);
+        BuildExtractionHood(root, p);
+        BuildLiftGantry(root, p);
+        BuildRollingCart(root, p);
+        BuildDrawerCabinet(root, p);
+        BuildCrateStack(root, p);
+        BuildToolWalls(root, p);
+        BuildWallClock(root, p);
+        BuildCeilingPipe(root, p);
+        BuildFloorClutter(root, p);
+    }
+
+    static void BuildBackWorkbench(Transform root, LabPalette p)
+    {
+        float cx = 0.60f, cz = 5.25f;
+        var b = new GameObject("BackWorkbench").transform;
+        b.SetParent(root, false);
+
+        Cube("Top", new Vector3(cx, 0.94f, cz), new Vector3(3.35f, 0.08f, 0.74f), p.oak, b);
+        for (int i = 0; i < 4; i++)
+        {
+            float x = cx + ((i & 1) == 0 ? -1.48f : 1.48f);
+            float z = cz + ((i & 2) == 0 ? -0.29f : 0.29f);
+            Cube("Leg", new Vector3(x, 0.45f, z), new Vector3(0.09f, 0.90f, 0.09f), p.oakDark, b);
+        }
+        Cube("LowerShelf", new Vector3(cx, 0.25f, cz), new Vector3(3.15f, 0.05f, 0.62f), p.oakDark, b, false);
+        Cube("Apron", new Vector3(cx, 0.82f, cz - 0.33f), new Vector3(3.05f, 0.18f, 0.06f), p.oakDark, b, false);
+        for (int i = 0; i < 2; i++)
+        {
+            float x = cx + (i == 0 ? -0.76f : 0.76f);
+            Cube("DrawerFace", new Vector3(x, 0.82f, cz - 0.365f),
+                new Vector3(1.28f, 0.14f, 0.025f), p.oak, b, false);
+            Cube("DrawerPull", new Vector3(x, 0.82f, cz - 0.397f),
+                new Vector3(0.24f, 0.025f, 0.028f), p.brass, b, false);
+        }
+        Cube("Backsplash", new Vector3(cx, 1.17f, cz + 0.35f),
+            new Vector3(3.35f, 0.44f, 0.05f), p.oakDark, b, false);
+
+        BuildJacket(b, new Vector3(cx + 0.92f, 1.03f, cz - 0.02f), 0.95f, p);
+        BuildToolTray(b, new Vector3(cx - 0.62f, 0.98f, cz), p);
+        BuildTaskLamp(b, new Vector3(cx - 1.36f, 0.98f, cz + 0.10f), p, true);
+        var sheet = Cube("PaperSheet", new Vector3(cx + 0.10f, 0.968f, cz + 0.19f),
+            new Vector3(0.32f, 0.004f, 0.24f), p.paper, b, false);
+        sheet.transform.localRotation = Quaternion.Euler(0f, 12f, 0f);
+        var sheet2 = Cube("PaperSheet2", new Vector3(cx + 0.24f, 0.970f, cz + 0.05f),
+            new Vector3(0.22f, 0.004f, 0.30f), p.paper, b, false);
+        sheet2.transform.localRotation = Quaternion.Euler(0f, -9f, 0f);
+        BuildJar(b, new Vector3(cx - 0.20f, 1.08f, cz + 0.27f), 0.07f, 0.23f, p);
+    }
+
+    static void BuildToolTray(Transform parent, Vector3 pos, LabPalette p)
+    {
+        var g = new GameObject("BenchToolTray").transform;
+        g.SetParent(parent, false);
+        g.localPosition = pos;
+
+        Cube("TrayFloor", new Vector3(0f, 0.012f, 0f), new Vector3(0.80f, 0.02f, 0.44f), p.steelDark, g, false);
+        Cube("TrayFront", new Vector3(0f, 0.035f, 0.22f), new Vector3(0.80f, 0.05f, 0.02f), p.steelDark, g, false);
+        Cube("TrayBack", new Vector3(0f, 0.035f, -0.22f), new Vector3(0.80f, 0.05f, 0.02f), p.steelDark, g, false);
+        Cube("TrayLeft", new Vector3(-0.40f, 0.035f, 0f), new Vector3(0.02f, 0.05f, 0.44f), p.steelDark, g, false);
+        Cube("TrayRight", new Vector3(0.40f, 0.035f, 0f), new Vector3(0.02f, 0.05f, 0.44f), p.steelDark, g, false);
+
+        var blade = Cube("ScraperBlade", new Vector3(-0.20f, 0.045f, 0.03f),
+            new Vector3(0.13f, 0.008f, 0.075f), p.steel, g, false);
+        blade.transform.localRotation = Quaternion.Euler(0f, -16f, 0f);
+        var handle = Cube("ScraperHandle", new Vector3(-0.05f, 0.048f, 0.02f),
+            new Vector3(0.17f, 0.022f, 0.028f), p.oak, g, false);
+        handle.transform.localRotation = Quaternion.Euler(0f, -16f, 0f);
+        Cube("BrushHandle", new Vector3(0.20f, 0.052f, -0.04f),
+            new Vector3(0.20f, 0.022f, 0.025f), p.oak, g, false);
+        Cube("BrushHead", new Vector3(0.30f, 0.048f, -0.04f),
+            new Vector3(0.075f, 0.028f, 0.05f), p.burlap, g, false);
+        Cube("ChiselShaft", new Vector3(0.10f, 0.052f, 0.12f),
+            new Vector3(0.20f, 0.012f, 0.018f), p.steel, g, false);
+        Cube("ChiselGrip", new Vector3(-0.02f, 0.055f, 0.12f),
+            new Vector3(0.10f, 0.022f, 0.026f), p.rubber, g, false);
+    }
+
+    static void BuildTaskLamp(Transform parent, Vector3 pos, LabPalette p, bool withLight)
+    {
+        var g = new GameObject("TaskLamp").transform;
+        g.SetParent(parent, false);
+        g.localPosition = pos;
+
+        VCylinder("Base", new Vector3(0f, 0.02f, 0f), 0.10f, 0.035f, p.steelDark, g);
+        Cube("Column", new Vector3(0f, 0.28f, 0f), new Vector3(0.018f, 0.50f, 0.018f), p.brass, g, false);
+        var arm = Cube("Arm", new Vector3(0.10f, 0.55f, 0.02f),
+            new Vector3(0.24f, 0.016f, 0.016f), p.brass, g, false);
+        arm.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
+        Sphere("Joint", new Vector3(0.21f, 0.545f, 0.02f), Vector3.one * 0.035f, p.brass, g);
+        Sphere("Shade", new Vector3(0.21f, 0.475f, 0.02f),
+            new Vector3(0.26f, 0.16f, 0.26f), p.enamel, g);
+        Sphere("Bulb", new Vector3(0.21f, 0.445f, 0.02f),
+            Vector3.one * 0.075f, p.cream, g);
+        if (withLight)
+        {
+            var lgo = new GameObject("TaskLampLight");
+            lgo.transform.SetParent(g, false);
+            lgo.transform.localPosition = new Vector3(0.21f, 0.40f, 0.02f);
+            var l = lgo.AddComponent<Light>();
+            l.type = LightType.Point;
+            l.color = new Color(1f, 0.82f, 0.55f);
+            l.intensity = 2.2f;
+            l.range = 2.7f;
+            l.shadows = LightShadows.None;
+        }
+    }
+
+    static void BuildJacket(Transform parent, Vector3 pos, float s, LabPalette p)
+    {
+        var g = new GameObject("PlasterJacket").transform;
+        g.SetParent(parent, false);
+        g.localPosition = pos;
+
+        // A field jacket is a crate-like burlap parcel with a rough plaster
+        // cap: flat faces and a strap read better than a stack of spheres.
+        Cube("JacketBurlap", new Vector3(0f, -0.02f, 0f),
+            new Vector3(0.58f, 0.24f, 0.44f) * s, p.burlap, g, false);
+        var cap = Cube("JacketPlaster", new Vector3(0.02f, 0.095f, 0.01f),
+            new Vector3(0.50f, 0.16f, 0.36f) * s, p.plaster, g, false);
+        cap.transform.localRotation = Quaternion.Euler(0f, 7f, 1.5f);
+        Sphere("JacketCrown", new Vector3(-0.10f, 0.16f, -0.02f),
+            new Vector3(0.24f, 0.14f, 0.20f) * s, p.plaster, g);
+        Cube("JacketStrapA", new Vector3(0f, 0.01f, 0f),
+            new Vector3(0.64f, 0.016f, 0.055f) * s, p.rubber, g, false);
+        Cube("JacketStrapB", new Vector3(0f, 0.01f, 0f),
+            new Vector3(0.055f, 0.016f, 0.50f) * s, p.rubber, g, false);
+        var tag = Cube("JacketTag", new Vector3(0.14f, 0.08f, 0.18f),
+            new Vector3(0.13f, 0.003f, 0.09f) * s, p.paper, g, false);
+        tag.transform.localRotation = Quaternion.Euler(0f, 18f, 0f);
+    }
+
+    static void BuildJar(Transform parent, Vector3 pos, float radius, float height, LabPalette p)
+    {
+        var g = new GameObject("SampleJar").transform;
+        g.SetParent(parent, false);
+        g.localPosition = pos;
+
+        VCylinder("Body", Vector3.zero, radius, height, p.jar, g);
+        VCylinder("Cork", new Vector3(0f, height * 0.5f + 0.012f, 0f),
+            radius * 0.82f, 0.035f, p.cardboard, g);
+        Cube("Label", new Vector3(0f, -height * 0.05f, -radius * 0.96f),
+            new Vector3(radius * 1.15f, height * 0.42f, 0.004f), p.paper, g, false);
+    }
+
+    static void BuildSpecimenCabinet(Transform root, LabPalette p)
+    {
+        float cx = -3.85f, cz = 5.30f;
+        var c = new GameObject("SpecimenCabinet").transform;
+        c.SetParent(root, false);
+
+        Cube("Plinth", new Vector3(cx, 0.10f, cz), new Vector3(2.20f, 0.20f, 0.64f), p.oakDark, c);
+        Cube("Bottom", new Vector3(cx, 0.23f, cz), new Vector3(2.10f, 0.06f, 0.60f), p.oak, c, false);
+        Cube("Top", new Vector3(cx, 2.62f, cz), new Vector3(2.20f, 0.10f, 0.66f), p.oakDark, c);
+        Cube("BackPanel", new Vector3(cx, 1.42f, cz + 0.29f),
+            new Vector3(2.10f, 2.34f, 0.04f), p.oakDark, c, false);
+        Cube("SideLeft", new Vector3(cx - 1.05f, 1.42f, cz),
+            new Vector3(0.07f, 2.34f, 0.60f), p.oak, c);
+        Cube("SideRight", new Vector3(cx + 1.05f, 1.42f, cz),
+            new Vector3(0.07f, 2.34f, 0.60f), p.oak, c);
+        for (int i = 0; i < 3; i++)
+            Cube("Shelf", new Vector3(cx, 0.72f + i * 0.60f, cz),
+                new Vector3(2.02f, 0.045f, 0.56f), p.oak, c, false);
+
+        BuildJacket(c, new Vector3(cx - 0.58f, 0.95f, cz + 0.02f), 0.72f, p);
+        BuildJacket(c, new Vector3(cx + 0.52f, 1.53f, cz - 0.02f), 0.60f, p);
+        BuildJar(c, new Vector3(cx + 0.65f, 0.92f, cz + 0.10f), 0.085f, 0.25f, p);
+        BuildJar(c, new Vector3(cx + 0.82f, 0.92f, cz - 0.08f), 0.065f, 0.19f, p);
+        Cube("ArchiveBox", new Vector3(cx - 0.62f, 2.18f, cz - 0.02f),
+            new Vector3(0.62f, 0.30f, 0.42f), p.cardboard, c, false);
+        Cube("ArchiveLabel", new Vector3(cx - 0.62f, 2.18f, cz - 0.235f),
+            new Vector3(0.30f, 0.16f, 0.004f), p.paper, c, false);
+
+        // Wire-mesh specimen doors: the bars keep the contents readable.
+        Cube("CageTop", new Vector3(cx, 2.53f, cz - 0.32f),
+            new Vector3(2.04f, 0.04f, 0.04f), p.brass, c, false);
+        Cube("CageMid", new Vector3(cx, 1.36f, cz - 0.32f),
+            new Vector3(2.04f, 0.035f, 0.035f), p.brass, c, false);
+        Cube("CageBottom", new Vector3(cx, 0.27f, cz - 0.32f),
+            new Vector3(2.04f, 0.04f, 0.04f), p.brass, c, false);
+        Cube("CageCenterPost", new Vector3(cx, 1.40f, cz - 0.32f),
+            new Vector3(0.035f, 2.26f, 0.035f), p.brass, c, false);
+        for (int i = 0; i < 15; i++)
+        {
+            float x = cx - 0.96f + i * 0.137f;
+            if (Mathf.Abs(x - cx) < 0.04f) continue;
+            VCylinder("CageBar", new Vector3(x, 1.40f, cz - 0.32f),
+                0.006f, 2.26f, p.brass, c);
+        }
+        Sphere("CageHandleA", new Vector3(cx - 0.12f, 1.28f, cz - 0.36f),
+            Vector3.one * 0.035f, p.brass, c);
+        Sphere("CageHandleB", new Vector3(cx + 0.12f, 1.28f, cz - 0.36f),
+            Vector3.one * 0.035f, p.brass, c);
+
+        Cube("CabinetSignBack", new Vector3(cx, 2.80f, cz - 0.265f),
+            new Vector3(1.30f, 0.22f, 0.030f), p.oakDark, c, false);
+        Cube("CabinetSignLip", new Vector3(cx, 2.69f, cz - 0.275f),
+            new Vector3(1.30f, 0.020f, 0.020f), p.brass, c, false);
+        AddWallText(c, "CabinetLabel", "ХРАНЕНИЕ ОБРАЗЦОВ",
+            new Vector3(cx, 2.80f, cz - 0.30f), Quaternion.identity,
+            0.014f, new Color(0.85f, 0.74f, 0.52f));
+    }
+
+    static void BuildStorageShelves(Transform root, LabPalette p)
+    {
+        float cx = 3.95f, cz = 5.28f;
+        var s = new GameObject("StorageShelves").transform;
+        s.SetParent(root, false);
+
+        for (int side = -1; side <= 1; side += 2)
+        {
+            for (int back = -1; back <= 1; back += 2)
+            {
+                Cube("Post", new Vector3(cx + side * 1.04f, 1.42f, cz + back * 0.27f),
+                    new Vector3(0.07f, 2.84f, 0.07f), p.oakDark, s);
+            }
+        }
+        for (int i = 0; i < 5; i++)
+            Cube("Shelf", new Vector3(cx, 0.18f + i * 0.63f, cz),
+                new Vector3(2.14f, 0.055f, 0.60f), p.oak, s, false);
+        Cube("CrossBrace", new Vector3(cx, 1.42f, cz + 0.30f),
+            new Vector3(2.04f, 0.04f, 0.04f), p.steelDark, s, false);
+        Cube("CrossBrace2", new Vector3(cx, 2.45f, cz + 0.30f),
+            new Vector3(2.04f, 0.04f, 0.04f), p.steelDark, s, false);
+
+        BuildJacket(s, new Vector3(cx - 0.55f, 0.52f, cz), 0.62f, p);
+        BuildLabCrate(s, new Vector3(cx + 0.46f, 0.52f, cz), new Vector3(0.66f, 0.52f, 0.48f), p, -8f);
+        BuildLabCrate(s, new Vector3(cx - 0.50f, 1.18f, cz), new Vector3(0.72f, 0.48f, 0.50f), p, 5f);
+        Cube("ArchiveBoxA", new Vector3(cx + 0.48f, 1.22f, cz),
+            new Vector3(0.64f, 0.40f, 0.46f), p.cardboard, s, false);
+        Cube("ArchiveLabelA", new Vector3(cx + 0.48f, 1.22f, cz - 0.235f),
+            new Vector3(0.30f, 0.18f, 0.004f), p.paper, s, false);
+        Cube("ArchiveBoxB", new Vector3(cx - 0.58f, 1.85f, cz),
+            new Vector3(0.56f, 0.34f, 0.44f), p.cardboard, s, false);
+        var roll = Cylinder("BurlapRoll", new Vector3(cx + 0.55f, 1.90f, cz),
+            0.10f, 0.92f, p.burlap, s);
+        roll.transform.localRotation = Quaternion.Euler(0f, 90f, 90f);
+        BuildJar(s, new Vector3(cx - 0.55f, 2.48f, cz), 0.09f, 0.24f, p);
+        BuildJar(s, new Vector3(cx - 0.30f, 2.48f, cz + 0.04f), 0.07f, 0.18f, p);
+
+        Cube("ShelvesSignBack", new Vector3(cx, 2.98f, cz - 0.245f),
+            new Vector3(1.34f, 0.22f, 0.030f), p.oakDark, s, false);
+        Cube("ShelvesSignLip", new Vector3(cx, 2.87f, cz - 0.255f),
+            new Vector3(1.34f, 0.020f, 0.020f), p.brass, s, false);
+        AddWallText(s, "ShelvesLabel", "КАРТОТЕКА · ОБРАЗЦЫ",
+            new Vector3(cx, 2.98f, cz - 0.28f), Quaternion.identity,
+            0.014f, new Color(0.85f, 0.74f, 0.52f));
+    }
+
+    static void BuildExtractionHood(Transform root, LabPalette p)
+    {
+        float cx = -5.45f, cz = 3.95f;
+        var h = new GameObject("ExtractionHood").transform;
+        h.SetParent(root, false);
+
+        Cube("BaseCabinet", new Vector3(cx, 0.48f, cz),
+            new Vector3(1.82f, 0.96f, 1.02f), p.enamel, h);
+        Cube("BaseDoorL", new Vector3(cx - 0.44f, 0.48f, cz - 0.525f),
+            new Vector3(0.76f, 0.78f, 0.025f), p.enamel, h, false);
+        Cube("BaseDoorR", new Vector3(cx + 0.44f, 0.48f, cz - 0.525f),
+            new Vector3(0.76f, 0.78f, 0.025f), p.enamel, h, false);
+        Cube("DoorHandleL", new Vector3(cx - 0.10f, 0.48f, cz - 0.555f),
+            new Vector3(0.03f, 0.16f, 0.03f), p.brass, h, false);
+        Cube("DoorHandleR", new Vector3(cx + 0.10f, 0.48f, cz - 0.555f),
+            new Vector3(0.03f, 0.16f, 0.03f), p.brass, h, false);
+        Cube("Worktop", new Vector3(cx, 0.98f, cz),
+            new Vector3(1.90f, 0.05f, 1.08f), p.steelDark, h, false);
+        Cube("HoodBack", new Vector3(cx, 1.76f, cz + 0.49f),
+            new Vector3(1.88f, 1.52f, 0.06f), p.steel, h);
+        Cube("HoodSideL", new Vector3(cx - 0.91f, 1.76f, cz),
+            new Vector3(0.06f, 1.52f, 1.02f), p.steel, h);
+        Cube("HoodSideR", new Vector3(cx + 0.91f, 1.76f, cz),
+            new Vector3(0.06f, 1.52f, 1.02f), p.steel, h);
+        Cube("HoodTop", new Vector3(cx, 2.54f, cz),
+            new Vector3(1.94f, 0.08f, 1.06f), p.steel, h);
+        Cube("HoodInterior", new Vector3(cx, 1.66f, cz + 0.44f),
+            new Vector3(1.76f, 1.20f, 0.03f), p.steelDark, h, false);
+        Cube("SashPanel", new Vector3(cx, 1.56f, cz - 0.47f),
+            new Vector3(1.76f, 0.52f, 0.035f), p.steelDark, h, false);
+        Cube("SashFrame", new Vector3(cx, 1.85f, cz - 0.475f),
+            new Vector3(1.80f, 0.05f, 0.045f), p.steel, h, false);
+        Cube("SashHandle", new Vector3(cx, 1.36f, cz - 0.50f),
+            new Vector3(0.54f, 0.03f, 0.03f), p.brass, h, false);
+
+        VCylinder("DuctRiser", new Vector3(cx + 0.52f, 3.98f, cz + 0.42f),
+            0.17f, 2.95f, p.steelDark, h);
+        VCylinder("DuctCollar", new Vector3(cx + 0.52f, 2.55f, cz + 0.42f),
+            0.20f, 0.10f, p.steel, h);
+        VCylinder("DuctCollarTop", new Vector3(cx + 0.52f, 5.42f, cz + 0.42f),
+            0.20f, 0.10f, p.steel, h);
+
+        AddWallText(h, "HoodLabel", "ВЫТЯЖКА", new Vector3(cx, 2.16f, cz - 0.485f),
+            Quaternion.identity, 0.015f, new Color(0.86f, 0.79f, 0.60f));
+
+        VCylinder("HoodBucket", new Vector3(cx + 1.25f, 0.16f, cz - 0.35f),
+            0.16f, 0.32f, p.steelDark, h);
+        var bucketHandle = new GameObject("BucketHandle");
+        bucketHandle.transform.SetParent(h, false);
+        bucketHandle.transform.localPosition = new Vector3(cx + 1.25f, 0.34f, cz - 0.35f);
+        var lr = bucketHandle.AddComponent<LineRenderer>();
+        lr.useWorldSpace = false;
+        lr.positionCount = 9;
+        lr.startWidth = 0.012f;
+        lr.endWidth = 0.012f;
+        lr.material = p.steel;
+        for (int i = 0; i < 9; i++)
+        {
+            float a = Mathf.PI * i / 8f;
+            lr.SetPosition(i, new Vector3(Mathf.Cos(a) * 0.16f, Mathf.Sin(a) * 0.16f, 0f));
+        }
+    }
+
+    static void BuildLiftGantry(Transform root, LabPalette p)
+    {
+        float cx = 3.30f, cz = 3.10f;
+        var g = new GameObject("LiftGantry").transform;
+        g.SetParent(root, false);
+
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Cube("Upright", new Vector3(cx + side * 0.78f, 1.34f, cz),
+                new Vector3(0.10f, 2.68f, 0.10f), p.steelDark, g);
+            Cube("Foot", new Vector3(cx + side * 0.78f, 0.06f, cz),
+                new Vector3(0.46f, 0.12f, 0.46f), p.steelDark, g);
+            var brace = Cube("Brace", new Vector3(cx + side * 0.40f, 2.30f, cz),
+                new Vector3(0.05f, 0.72f, 0.05f), p.steelDark, g, false);
+            brace.transform.localRotation = Quaternion.Euler(0f, 0f, side * 42f);
+        }
+        Cube("TopBeam", new Vector3(cx, 2.66f, cz),
+            new Vector3(1.80f, 0.12f, 0.12f), p.steelDark, g);
+        VCylinder("Chain", new Vector3(cx, 2.10f, cz),
+            0.010f, 1.02f, p.iron, g);
+        Cube("HookA", new Vector3(cx, 1.55f, cz), new Vector3(0.06f, 0.06f, 0.06f), p.iron, g, false);
+        var hook = Cube("HookB", new Vector3(cx + 0.04f, 1.50f, cz),
+            new Vector3(0.03f, 0.12f, 0.03f), p.iron, g, false);
+        hook.transform.localRotation = Quaternion.Euler(0f, 0f, 28f);
+        Cube("Pallet", new Vector3(cx, 0.10f, cz),
+            new Vector3(1.30f, 0.12f, 0.88f), p.oak, g);
+        BuildJacket(g, new Vector3(cx, 0.48f, cz), 1.15f, p);
+        Cube("GantryStrap", new Vector3(cx, 0.50f, cz),
+            new Vector3(1.34f, 0.016f, 0.07f), p.rubber, g, false);
+    }
+
+    static void BuildRollingCart(Transform root, LabPalette p)
+    {
+        float cx = -2.85f, cz = 2.80f;
+        var c = new GameObject("RollingCart").transform;
+        c.SetParent(root, false);
+
+        for (int i = 0; i < 3; i++)
+            Cube("Shelf", new Vector3(cx, 0.31f + i * 0.27f, cz),
+                new Vector3(1.12f, 0.035f, 0.70f), p.steelDark, c, false);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            for (int back = -1; back <= 1; back += 2)
+            {
+                Cube("Post", new Vector3(cx + side * 0.52f, 0.47f, cz + back * 0.31f),
+                    new Vector3(0.035f, 0.94f, 0.035f), p.steel, c);
+            }
+        }
+        Cube("Handle", new Vector3(cx, 0.99f, cz - 0.36f),
+            new Vector3(1.12f, 0.035f, 0.035f), p.steel, c, false);
+        for (int side = -1; side <= 1; side += 2)
+            Cube("HandlePost", new Vector3(cx + side * 0.52f, 0.90f, cz - 0.36f),
+                new Vector3(0.035f, 0.22f, 0.035f), p.steel, c, false);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            for (int back = -1; back <= 1; back += 2)
+            {
+                Cube("Wheel", new Vector3(cx + side * 0.46f, 0.09f, cz + back * 0.26f),
+                    new Vector3(0.10f, 0.16f, 0.10f), p.rubber, c, false);
+            }
+        }
+
+        BuildJacket(c, new Vector3(cx - 0.22f, 0.58f, cz), 0.52f, p);
+        BuildJar(c, new Vector3(cx + 0.34f, 0.42f, cz + 0.08f), 0.075f, 0.20f, p);
+        Cube("CartTray", new Vector3(cx + 0.22f, 0.66f, cz - 0.12f),
+            new Vector3(0.44f, 0.03f, 0.30f), p.steel, c, false);
+        BuildToolTray(c, new Vector3(cx + 0.22f, 0.68f, cz - 0.12f), p);
+    }
+
+    static void BuildDrawerCabinet(Transform root, LabPalette p)
+    {
+        float cx = 4.05f, cz = 1.95f;
+        var c = new GameObject("DrawerCabinet").transform;
+        c.SetParent(root, false);
+
+        Cube("Body", new Vector3(cx, 0.80f, cz),
+            new Vector3(1.02f, 1.56f, 0.64f), p.enamel, c);
+        Cube("Plinth", new Vector3(cx, 0.08f, cz),
+            new Vector3(1.06f, 0.16f, 0.68f), p.steelDark, c);
+        Cube("Top", new Vector3(cx, 1.60f, cz),
+            new Vector3(1.08f, 0.06f, 0.70f), p.steelDark, c, false);
+        for (int i = 0; i < 6; i++)
+        {
+            float y = 0.25f + i * 0.215f;
+            Cube("DrawerFace", new Vector3(cx, y, cz - 0.33f),
+                new Vector3(0.90f, 0.175f, 0.025f), p.enamel, c, false);
+            Cube("DrawerPull", new Vector3(cx, y, cz - 0.355f),
+                new Vector3(0.34f, 0.025f, 0.03f), p.brass, c, false);
+            Cube("DrawerLabel", new Vector3(cx, y + 0.055f, cz - 0.347f),
+                new Vector3(0.24f, 0.045f, 0.004f), p.paper, c, false);
+        }
+
+        Cube("TopTray", new Vector3(cx - 0.18f, 1.66f, cz - 0.10f),
+            new Vector3(0.54f, 0.035f, 0.34f), p.steelDark, c, false);
+        BuildJar(c, new Vector3(cx + 0.28f, 1.76f, cz + 0.08f), 0.075f, 0.22f, p);
+        BuildTaskLamp(c, new Vector3(cx + 0.32f, 1.63f, cz - 0.14f), p, false);
+    }
+
+    static void BuildCrateStack(Transform root, LabPalette p)
+    {
+        BuildLabCrate(root, new Vector3(-4.15f, 0.36f, 3.75f),
+            new Vector3(0.94f, 0.68f, 0.70f), p, 11f);
+        BuildLabCrate(root, new Vector3(-4.05f, 1.06f, 3.80f),
+            new Vector3(0.82f, 0.62f, 0.62f), p, -6f);
+        BuildLabCrate(root, new Vector3(-3.90f, 0.30f, 4.55f),
+            new Vector3(0.72f, 0.56f, 0.58f), p, 24f);
+        Cube("CratePaperA", new Vector3(-4.15f, 0.44f, 3.39f),
+            new Vector3(0.28f, 0.16f, 0.004f), p.paper, root, false);
+    }
+
+    static void BuildLabCrate(Transform parent, Vector3 pos, Vector3 size, LabPalette p, float yaw)
+    {
+        var c = new GameObject("LabCrate").transform;
+        c.SetParent(parent, false);
+        c.localPosition = pos;
+        c.localRotation = Quaternion.Euler(0f, yaw, 0f);
+
+        Cube("Box", Vector3.zero, size, p.oak, c);
+        Cube("BattenTop", new Vector3(0f, size.y * 0.5f + 0.015f, 0f),
+            new Vector3(size.x * 1.02f, 0.035f, size.z * 1.02f), p.oakDark, c, false);
+        Cube("BattenBottom", new Vector3(0f, -size.y * 0.5f - 0.015f, 0f),
+            new Vector3(size.x * 1.02f, 0.035f, size.z * 1.02f), p.oakDark, c, false);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Cube("SideBatten", new Vector3(side * size.x * 0.5f, 0f, 0f),
+                new Vector3(0.035f, size.y * 0.96f, size.z * 0.98f), p.oakDark, c, false);
+        }
+        Cube("FrontLabel", new Vector3(0f, 0f, -size.z * 0.5f - 0.006f),
+            new Vector3(size.x * 0.42f, size.y * 0.28f, 0.004f), p.paper, c, false);
+    }
+
+    static void BuildToolWalls(Transform root, LabPalette p)
+    {
+        // Pegboard on the pier above the bench.
+        float px = 1.60f, pz = 6.46f;
+        Cube("PegboardFrame", new Vector3(px, 2.60f, pz + 0.02f),
+            new Vector3(1.26f, 0.96f, 0.05f), p.oakDark, root, false);
+        Cube("PegboardFace", new Vector3(px, 2.60f, pz - 0.02f),
+            new Vector3(1.18f, 0.88f, 0.02f), p.pegboard, root, false);
+
+        var hammer = new GameObject("PegHammer").transform;
+        hammer.SetParent(root, false);
+        hammer.localPosition = new Vector3(px - 0.32f, 2.55f, pz - 0.05f);
+        Cube("HammerHandle", new Vector3(0f, -0.10f, 0f),
+            new Vector3(0.035f, 0.36f, 0.035f), p.oak, hammer, false);
+        Cube("HammerHead", new Vector3(0f, 0.10f, 0f),
+            new Vector3(0.20f, 0.09f, 0.07f), p.steel, hammer, false);
+        var wrench = new GameObject("PegWrench").transform;
+        wrench.SetParent(root, false);
+        wrench.localPosition = new Vector3(px + 0.02f, 2.55f, pz - 0.05f);
+        Cube("WrenchShaft", new Vector3(0f, -0.08f, 0f),
+            new Vector3(0.035f, 0.34f, 0.02f), p.steel, wrench, false);
+        Cube("WrenchJawA", new Vector3(-0.05f, 0.11f, 0f),
+            new Vector3(0.06f, 0.10f, 0.02f), p.steel, wrench, false);
+        Cube("WrenchJawB", new Vector3(0.05f, 0.11f, 0f),
+            new Vector3(0.06f, 0.10f, 0.02f), p.steel, wrench, false);
+        var brush = new GameObject("PegBrush").transform;
+        brush.SetParent(root, false);
+        brush.localPosition = new Vector3(px + 0.36f, 2.55f, pz - 0.05f);
+        Cube("BrushPegHandle", new Vector3(0f, -0.06f, 0f),
+            new Vector3(0.045f, 0.30f, 0.035f), p.oak, brush, false);
+        Cube("BrushPegHead", new Vector3(0f, -0.23f, 0f),
+            new Vector3(0.12f, 0.06f, 0.06f), p.burlap, brush, false);
+
+        for (int i = 0; i < 5; i++)
+        {
+            var note = Cube("PegNote", new Vector3(px + 0.02f + (i - 2) * 0.15f, 2.92f, pz - 0.055f),
+                new Vector3(0.10f, 0.12f, 0.004f), p.paper, root, false);
+            note.transform.localRotation = Quaternion.Euler(0f, 0f, (i - 2) * 4f);
+            Sphere("PegPin", new Vector3(note.transform.localPosition.x, 2.98f, pz - 0.065f),
+                Vector3.one * 0.014f, p.red, root);
+        }
+
+        // Cork planning board on the other pier.
+        float cx = -1.60f;
+        Cube("CorkFrame", new Vector3(cx, 2.55f, pz + 0.02f),
+            new Vector3(1.20f, 0.86f, 0.05f), p.oakDark, root, false);
+        Cube("CorkFace", new Vector3(cx, 2.55f, pz - 0.02f),
+            new Vector3(1.12f, 0.78f, 0.02f), p.cork, root, false);
+        for (int i = 0; i < 3; i++)
+        {
+            var note = Cube("CorkPaper", new Vector3(cx - 0.30f + i * 0.29f, 2.58f, pz - 0.05f),
+                new Vector3(0.24f, 0.30f, 0.004f), p.paper, root, false);
+            note.transform.localRotation = Quaternion.Euler(0f, 0f, (i - 1) * 3f);
+            Sphere("CorkPin", new Vector3(note.transform.localPosition.x, 2.72f, pz - 0.065f),
+                Vector3.one * 0.013f, i == 1 ? p.red : p.brass, root);
+        }
+        Cube("CorkPencil", new Vector3(cx + 0.36f, 2.32f, pz - 0.06f),
+            new Vector3(0.18f, 0.014f, 0.014f), p.red, root, false);
+    }
+
+    static void BuildWallClock(Transform root, LabPalette p)
+    {
+        float cx = 4.82f;
+        var c = new GameObject("WorkshopClock").transform;
+        c.SetParent(root, false);
+        c.localPosition = new Vector3(cx, 3.15f, 6.45f);
+
+        var face = VCylinder("ClockFace", Vector3.zero, 0.24f, 0.035f, p.paper, c);
+        face.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var rim = VCylinder("ClockRim", new Vector3(0f, 0f, 0.016f), 0.255f, 0.025f, p.brass, c);
+        rim.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        var hour = Cube("ClockHour", new Vector3(0.045f, 0.0f, -0.025f),
+            new Vector3(0.10f, 0.012f, 0.006f), p.steelDark, c, false);
+        hour.transform.localRotation = Quaternion.Euler(0f, 0f, 35f);
+        var minute = Cube("ClockMinute", new Vector3(-0.02f, 0.07f, -0.027f),
+            new Vector3(0.14f, 0.009f, 0.006f), p.steelDark, c, false);
+        minute.transform.localRotation = Quaternion.Euler(0f, 0f, 78f);
+        Sphere("ClockPin", new Vector3(0f, 0f, -0.03f), Vector3.one * 0.025f, p.brass, c);
+    }
+
+    static void BuildCeilingPipe(Transform root, LabPalette p)
+    {
+        var pipe = Cylinder("MainDuct", new Vector3(0f, 5.14f, 2.55f),
+            0.09f, 16.0f, p.steelDark, root);
+        pipe.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+        for (int i = -7; i <= 7; i += 2)
+        {
+            var collar = Cylinder("DuctCollar", new Vector3(i, 5.14f, 2.55f),
+                0.115f, 0.08f, p.steel, root);
+            collar.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            Cube("DuctHanger", new Vector3(i, 5.48f, 2.55f),
+                new Vector3(0.035f, 0.60f, 0.035f), p.steelDark, root, false);
+        }
+        VCylinder("DuctRiserWest", new Vector3(-6.9f, 4.50f, 2.55f),
+            0.11f, 1.30f, p.steelDark, root);
+        Cube("DuctBracketWest", new Vector3(-6.9f, 5.14f, 2.55f),
+            new Vector3(0.30f, 0.06f, 0.30f), p.steel, root, false);
+    }
+
+    static void BuildFloorClutter(Transform root, LabPalette p)
+    {
+        // Galvanised pail and a broom: small human traces in the aisle.
+        VCylinder("FloorPail", new Vector3(5.30f, 0.16f, 2.35f),
+            0.16f, 0.32f, p.steelDark, root);
+        var pailRim = VCylinder("PailRim", new Vector3(5.30f, 0.32f, 2.35f),
+            0.17f, 0.025f, p.steel, root);
+        var broom = new GameObject("Broom").transform;
+        broom.SetParent(root, false);
+        broom.localPosition = new Vector3(5.75f, 0.02f, 2.20f);
+        broom.localRotation = Quaternion.Euler(0f, 0f, -12f);
+        Cube("BroomHandle", new Vector3(0f, 0.68f, 0f),
+            new Vector3(0.035f, 1.30f, 0.035f), p.oak, broom, false);
+        Cube("BroomHead", new Vector3(0.04f, 0.10f, 0f),
+            new Vector3(0.30f, 0.07f, 0.12f), p.burlap, broom, false);
+
+        // Cable loop near the crate table.
+        var cable = new GameObject("FloorCable");
+        cable.transform.SetParent(root, false);
+        cable.transform.localPosition = new Vector3(3.80f, 0.02f, 1.30f);
+        var lr = cable.AddComponent<LineRenderer>();
+        lr.useWorldSpace = false;
+        lr.positionCount = 28;
+        lr.startWidth = 0.018f;
+        lr.endWidth = 0.018f;
+        lr.material = p.rubber;
+        for (int i = 0; i < 28; i++)
+        {
+            float t = i / 27f;
+            float a = t * Mathf.PI * 3.4f;
+            lr.SetPosition(i, new Vector3(Mathf.Cos(a) * 0.55f, 0f, Mathf.Sin(a) * 0.22f));
+        }
     }
 
     static GameObject ShellCube(string name, Vector3 pos, Vector3 scale, Material mat, Transform parent)
@@ -411,12 +1060,10 @@ public static class PrepGameBuilder
     }
 
     static void BuildPeriodWindow(Transform root, float x, float backZ,
-                                  Material trim, Material steel, Material glass)
+                                  Material trim, Material steel, Material glass,
+                                  float y, float w, float h)
     {
-        const float y = 2.56f;
-        const float w = 1.45f;
-        const float h = 2.30f;
-        const float z = 4.28f;
+        float z = backZ - 0.12f;
 
         Cube("WindowCasingL", new Vector3(x - w * 0.5f - 0.055f, y, z),
             new Vector3(0.11f, h + 0.22f, 0.12f), trim, root, false);
@@ -499,13 +1146,15 @@ public static class PrepGameBuilder
             0.024f, new Color(0.74f, 0.65f, 0.47f));
     }
 
-    static void BuildPendant(Transform root, Vector3 pos, Material brass, Material opal)
+    static void BuildPendant(Transform root, Vector3 pos, Material brass, Material opal,
+                             float ceilingY)
     {
         float rodBottom = pos.y + 0.14f;
-        const float rodTop = 4.57f;
+        float rodTop = ceilingY - 0.05f;
         Cube("PendantRod", new Vector3(pos.x, (rodBottom + rodTop) * 0.5f, pos.z),
             new Vector3(0.025f, rodTop - rodBottom, 0.025f), brass, root, false);
-        var canopy = Cylinder("PendantCanopy", new Vector3(pos.x, 4.55f, pos.z), 0.10f, 0.06f, brass, root);
+        var canopy = Cylinder("PendantCanopy", new Vector3(pos.x, ceilingY - 0.02f, pos.z),
+            0.10f, 0.06f, brass, root);
         canopy.transform.localRotation = Quaternion.identity;
         Object.DestroyImmediate(canopy.GetComponent<Collider>());
         var rim = Cylinder("PendantRim", pos + Vector3.up * 0.10f, 0.18f, 0.05f, brass, root);
@@ -517,7 +1166,10 @@ public static class PrepGameBuilder
         shade.transform.SetParent(root, false);
         shade.transform.localPosition = pos;
         shade.transform.localScale = new Vector3(0.46f, 0.30f, 0.46f);
-        shade.GetComponent<Renderer>().sharedMaterial = opal;
+        var shadeRenderer = shade.GetComponent<Renderer>();
+        shadeRenderer.sharedMaterial = opal;
+        // The opal bowl must not eclipse the point light tucked beneath it.
+        shadeRenderer.shadowCastingMode = ShadowCastingMode.Off;
         Object.DestroyImmediate(shade.GetComponent<Collider>());
 
         var finial = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -986,7 +1638,7 @@ public static class PrepGameBuilder
                 new Vector3(0.045f, 0.014f, 0.045f), brass, lidPivot, false);
         }
         AddWallText(lidPivot, "BookTitle", "ОПРЕДЕЛИТЕЛЬ",
-            new Vector3(0f, 0.012f, -0.145f), Quaternion.Euler(-90f, 0f, 0f),
+            new Vector3(0f, 0.012f, -0.145f), Quaternion.Euler(90f, 0f, 0f),
             0.0045f, new Color(0.78f, 0.65f, 0.38f));
 
         var collider = root.gameObject.AddComponent<BoxCollider>();
@@ -1190,7 +1842,7 @@ public static class PrepGameBuilder
         var sunGo = new GameObject("Sun");
         var sun = sunGo.AddComponent<Light>();
         sun.type = LightType.Directional;
-        sun.intensity = 0.65f;
+        sun.intensity = 0.78f;
         sun.color = new Color(1f, 0.93f, 0.82f);
         sun.shadows = LightShadows.Soft;
         sunGo.transform.rotation = Quaternion.Euler(42f, -28f, 0f);
@@ -1198,18 +1850,25 @@ public static class PrepGameBuilder
         var fillGo = new GameObject("FillLight");
         var fill = fillGo.AddComponent<Light>();
         fill.type = LightType.Directional;
-        fill.intensity = 0.35f;
+        fill.intensity = 0.40f;
         fill.color = new Color(0.78f, 0.84f, 0.95f);
         fill.shadows = LightShadows.None;
         fillGo.transform.rotation = Quaternion.Euler(18f, 160f, 0f);
 
-        AddPoint("PrepLamp", new Vector3(0.05f, 2.85f, -0.05f), new Color(1f, 0.88f, 0.72f), 6.5f, 5.0f);
-        AddPoint("CrateLamp", new Vector3(2.30f, 2.25f, 0.4f), new Color(1f, 0.86f, 0.68f), 5.0f, 3.8f);
-        AddPoint("DisplayLamp", new Vector3(-2.25f, 2.85f, 0.65f), new Color(1f, 0.91f, 0.78f), 4.5f, 3.4f);
+        AddPoint("PrepLamp", new Vector3(0.10f, 2.56f, 0.45f), new Color(1f, 0.88f, 0.72f), 11.0f, 6.2f);
+        AddPoint("CrateLamp", new Vector3(2.35f, 2.56f, 0.55f), new Color(1f, 0.86f, 0.68f), 9.0f, 5.8f);
+        AddPoint("DisplayLamp", new Vector3(-2.20f, 2.56f, 0.60f), new Color(1f, 0.91f, 0.78f), 7.0f, 5.4f);
+        AddPoint("BackBenchLamp", new Vector3(0.60f, 2.90f, 4.80f), new Color(1f, 0.89f, 0.72f), 5.0f, 5.5f, false);
+        AddPoint("CabinetLamp", new Vector3(-3.85f, 2.55f, 4.80f), new Color(1f, 0.88f, 0.70f), 3.5f, 4.5f, false);
+        AddPoint("ShelvesLamp", new Vector3(3.95f, 2.55f, 4.80f), new Color(1f, 0.88f, 0.70f), 3.5f, 4.5f, false);
+        AddPoint("WindowFillWest", new Vector3(-5.2f, 2.9f, 5.1f), new Color(0.80f, 0.86f, 0.96f), 6.0f, 9.0f, false);
+        AddPoint("WindowFillCenter", new Vector3(0f, 3.0f, 5.1f), new Color(0.82f, 0.88f, 0.97f), 7.0f, 9.5f, false);
+        AddPoint("WindowFillEast", new Vector3(5.2f, 2.9f, 5.1f), new Color(0.80f, 0.86f, 0.96f), 6.0f, 9.0f, false);
         if (crateLight != null) crateLight.intensity = 3.0f;
     }
 
-    static void AddPoint(string name, Vector3 pos, Color color, float intensity, float range)
+    static void AddPoint(string name, Vector3 pos, Color color, float intensity, float range,
+                         bool shadows = true)
     {
         var go = new GameObject(name);
         go.transform.position = pos;
@@ -1218,7 +1877,7 @@ public static class PrepGameBuilder
         l.color = color;
         l.intensity = intensity;
         l.range = range;
-        l.shadows = LightShadows.Soft;
+        l.shadows = shadows ? LightShadows.Soft : LightShadows.None;
     }
 
     // ------------------------------------------------------------- bones
@@ -1560,6 +2219,91 @@ public static class PrepGameBuilder
         parquet.SetPixels(parquetPixels);
         parquet.Apply();
         WritePeriodTexture(TexDir + "/Parquet.png", parquet);
+
+        // Worn dark linoleum for the working aisle: mottled, slightly scuffed.
+        const int linoSize = 256;
+        var lino = new Texture2D(linoSize, linoSize, TextureFormat.RGBA32, false);
+        var linoPixels = new Color[linoSize * linoSize];
+        for (int y = 0; y < linoSize; y++)
+        {
+            for (int x = 0; x < linoSize; x++)
+            {
+                float coarse = Mathf.PerlinNoise(x * 0.021f + 7.3f, y * 0.021f + 3.1f);
+                float fine = HashDirt(x, y, 121);
+                float tone = 0.86f + coarse * 0.24f + (fine - 0.5f) * 0.07f;
+                float scuff = Mathf.PerlinNoise(x * 0.09f + 31f, y * 0.012f + 5f);
+                if (scuff > 0.78f) tone += 0.06f;
+                linoPixels[y * linoSize + x] = new Color(
+                    0.265f * tone, 0.255f * tone, 0.205f * tone, 1f);
+            }
+        }
+        lino.SetPixels(linoPixels);
+        lino.Apply();
+        WritePeriodTexture(TexDir + "/Lino.png", lino);
+
+        // Painted pegboard with a regular hole grid.
+        const int pegSize = 256;
+        var peg = new Texture2D(pegSize, pegSize, TextureFormat.RGBA32, false);
+        var pegPixels = new Color[pegSize * pegSize];
+        for (int y = 0; y < pegSize; y++)
+        {
+            for (int x = 0; x < pegSize; x++)
+            {
+                int hx = x % 32;
+                int hy = y % 32;
+                float noise = (HashDirt(x, y, 47) - 0.5f) * 0.05f;
+                bool hole = hx >= 13 && hx <= 19 && hy >= 13 && hy <= 19;
+                float tone = hole ? 0.22f : 0.94f + noise;
+                pegPixels[y * pegSize + x] = new Color(
+                    0.55f * tone, 0.45f * tone, 0.31f * tone, 1f);
+            }
+        }
+        peg.SetPixels(pegPixels);
+        peg.Apply();
+        WritePeriodTexture(TexDir + "/Pegboard.png", peg);
+
+        // Coarse cork for the planning board.
+        const int corkSize = 256;
+        var cork = new Texture2D(corkSize, corkSize, TextureFormat.RGBA32, false);
+        var corkPixels = new Color[corkSize * corkSize];
+        for (int y = 0; y < corkSize; y++)
+        {
+            for (int x = 0; x < corkSize; x++)
+            {
+                float n = Mathf.PerlinNoise(x * 0.11f + 3.7f, y * 0.11f + 9.2f);
+                float f = HashDirt(x, y, 203);
+                float tone = 0.78f + n * 0.30f + (f - 0.5f) * 0.20f;
+                corkPixels[y * corkSize + x] = new Color(
+                    0.42f * tone, 0.30f * tone, 0.165f * tone, 1f);
+            }
+        }
+        cork.SetPixels(corkPixels);
+        cork.Apply();
+        WritePeriodTexture(TexDir + "/Cork.png", cork);
+
+        // A soft overcast sky behind the tall windows: the glass is emissive,
+        // so the plate has to carry its own daylight instead of pure white.
+        const int skySize = 512;
+        var sky = new Texture2D(skySize, skySize, TextureFormat.RGBA32, false);
+        var skyPixels = new Color[skySize * skySize];
+        Color skyTop = new Color(0.56f, 0.68f, 0.85f);
+        Color skyBottom = new Color(0.94f, 0.92f, 0.82f);
+        for (int y = 0; y < skySize; y++)
+        {
+            float t = y / (float)(skySize - 1);
+            Color baseCol = Color.Lerp(skyBottom, skyTop, Mathf.SmoothStep(0f, 1f, t));
+            for (int x = 0; x < skySize; x++)
+            {
+                float n = Mathf.PerlinNoise(x * 0.010f + 4.3f, y * 0.017f + 8.1f);
+                float n2 = Mathf.PerlinNoise(x * 0.031f + 21f, y * 0.043f + 3f);
+                float cloud = Mathf.SmoothStep(0.56f, 0.78f, n * 0.72f + n2 * 0.28f) * 0.55f;
+                Color c = Color.Lerp(baseCol, new Color(0.97f, 0.96f, 0.92f), cloud);
+                skyPixels[y * skySize + x] = c;
+            }
+        }
+        sky.SetPixels(skyPixels);
+        sky.Apply();
+        WritePeriodTexture(TexDir + "/Sky.png", sky);
     }
 
     static void WritePeriodTexture(string path, Texture2D texture)
@@ -1626,6 +2370,32 @@ public static class PrepGameBuilder
         go.transform.localScale = new Vector3(radius * 2f, height * 0.5f, radius * 2f);
         go.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
         go.GetComponent<Renderer>().sharedMaterial = mat;
+        return go;
+    }
+
+    static GameObject VCylinder(string name, Vector3 pos, float radius, float height,
+                                Material mat, Transform parent = null)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localScale = new Vector3(radius * 2f, height * 0.5f, radius * 2f);
+        go.GetComponent<Renderer>().sharedMaterial = mat;
+        Object.DestroyImmediate(go.GetComponent<Collider>());
+        return go;
+    }
+
+    static GameObject Sphere(string name, Vector3 pos, Vector3 scale,
+                             Material mat, Transform parent = null)
+    {
+        var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        go.name = name;
+        go.transform.SetParent(parent, false);
+        go.transform.localPosition = pos;
+        go.transform.localScale = scale;
+        go.GetComponent<Renderer>().sharedMaterial = mat;
+        Object.DestroyImmediate(go.GetComponent<Collider>());
         return go;
     }
 

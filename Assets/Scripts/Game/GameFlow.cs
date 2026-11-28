@@ -42,9 +42,9 @@ public class GameFlow : MonoBehaviour
     public Vector3 crateViewTarget = new Vector3(2.30f, 1.00f, 0.42f);
     public float crateViewFov = 50f;
 
-    public Vector3 prepViewPosition = new Vector3(0.24f, 1.80f, -1.72f);
-    public Vector3 prepViewTarget = new Vector3(0.24f, 0.98f, -0.02f);
-    public float prepViewFov = 46f;
+    public Vector3 prepViewPosition = new Vector3(0.24f, 1.88f, -1.85f);
+    public Vector3 prepViewTarget = new Vector3(0.24f, 1.12f, 0.95f);
+    public float prepViewFov = 52f;
     public Vector3 finishedViewPosition = new Vector3(-2.00f, 3.80f, -0.90f);
     public Vector3 finishedViewTarget = new Vector3(-2.30f, 1.00f, 0.42f);
     public float finishedViewFov = 50f;
