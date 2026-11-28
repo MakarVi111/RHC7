@@ -1,0 +1,16 @@
+РХЦ-7 · Музейная препарация
+Команда: 56755
+Репозиторий: https://github.com/MakarVi111/RHC7
+Ветка: prep-game-final
+Кодовая база: f506d26 (ветка prep-game-final)
+Unity: 6000.0.76f1 (Unity 6.0.76f1), URP
+Основная сцена: Assets/Scenes/RHC7_PrepGame.unity
+Демо данных: Assets/Scenes/RHC7_DataDemo.unity
+Отчёт валидации: Assets/Scenes/RHC7_ConfigValidation.unity
+Безопасное подмножество: Assets/Scenes/RHC7_InvalidDataGame.unity
+Запуск: открыть RHC7 через Unity Hub, открыть основную сцену, Play.
+Сборка: Build Settings содержит только основную сцену.
+Архив исходников: RHC7_PrepGame_Source_2026-11-28.zip
+Пакет ассетов: RHC7_Assets_All_2026-11-28.unitypackage
+Документация: Архитектура.pdf
+Блок программирования: РХЦ-7_56755_Программирование.pdf
