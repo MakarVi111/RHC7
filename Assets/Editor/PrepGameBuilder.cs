@@ -130,8 +130,8 @@ public static class PrepGameBuilder
             "Assets/Textures/Wood.png", 0f, 0.34f, new Vector2(1.5f, 1.5f));
         var darkMat = MakeTexturedLit("CrateWood", new Color(0.96f, 0.91f, 0.85f),
             "Assets/Textures/WoodDark.png", 0f, 0.26f, Vector2.one);
-        var crateMat = MakeTexturedLit("CrateWoodLight", new Color(1f, 0.97f, 0.91f),
-            "Assets/Textures/Wood.png", 0f, 0.25f, new Vector2(2f, 2f));
+        var crateMat = MakeTexturedLit("CrateWoodLight", new Color(0.90f, 0.88f, 0.82f),
+            TexDir + "/CratePlanks.png", 0f, 0.25f, new Vector2(1.1f, 1f));
         var feltMat = MakeLit("PrepFelt", new Color(0.075f, 0.085f, 0.075f), 0f, 0.10f);
         var hayMat = MakeLit("Hay", new Color(0.62f, 0.47f, 0.20f), 0f, 0.05f);
         var metalMat = MakeLit("PrepMetal", new Color(0.48f, 0.35f, 0.17f), 0.78f, 0.48f);
@@ -288,6 +288,7 @@ public static class PrepGameBuilder
         var bronze = MakeLit("RoomBronze", new Color(0.13f, 0.105f, 0.07f), 0.72f, 0.38f);
         var iron = MakeLit("RadiatorIron", new Color(0.19f, 0.18f, 0.16f), 0.68f, 0.32f);
         var frameMat = MakeLit("WindowSteel", new Color(0.12f, 0.13f, 0.12f), 0.70f, 0.42f);
+        var blindMat = MakeLit("WindowBlind", new Color(0.72f, 0.66f, 0.54f), 0f, 0.18f);
         var windowMat = MakeTexturedLit("WindowGlow", new Color(0.92f, 0.94f, 0.93f),
             TexDir + "/Sky.png", 0f, 0.18f, Vector2.one);
         var skyTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + "/Sky.png");
@@ -402,7 +403,7 @@ public static class PrepGameBuilder
         }
 
         foreach (float x in new[] { -6.40f, -3.20f, 0f, 3.20f, 6.40f })
-            BuildPeriodWindow(root, x, backZ, trimMat, frameMat, windowMat,
+            BuildPeriodWindow(root, x, backZ, trimMat, frameMat, windowMat, blindMat,
                 3.35f, 1.80f, 3.10f);
         BuildRadiator(root, -6.40f, backZ - 0.46f, iron);
         BuildRadiator(root, 0f, backZ - 0.46f, iron);
@@ -479,14 +480,13 @@ public static class PrepGameBuilder
                 "Assets/Textures/Book/BookTrexFemur.png")
         };
 
-        // Small anti-fatigue mats in front of the fixed benches keep the
-        // parquet visible while still reading as a working restoration floor.
-        Cube("BackBenchMat", new Vector3(0.60f, 0.006f, 4.55f),
-            new Vector3(2.10f, 0.012f, 0.62f), p.lino, root, false);
-        Cube("LeftBenchMat", new Vector3(-5.90f, 0.006f, 3.95f),
-            new Vector3(1.50f, 0.012f, 0.55f), p.lino, root, false);
+        // Slatted duckboards keep feet off the cold parquet in the work zones.
+        BuildDuckboard(root, new Vector3(0.60f, 0f, 4.55f), 2.10f, 0.62f, p);
+        BuildDuckboard(root, new Vector3(-5.90f, 0f, 3.95f), 1.50f, 0.55f, p);
+        BuildDuckboard(root, new Vector3(0.15f, 0f, -0.95f), 2.00f, 0.60f, p);
 
         BuildBackWorkbench(root, p);
+        BuildMicroscope(root, p);
         BuildSpecimenCabinet(root, p);
         BuildStorageShelves(root, p);
         BuildExtractionHood(root, p);
@@ -498,10 +498,63 @@ public static class PrepGameBuilder
         BuildWallClock(root, p);
         BuildCeilingPipe(root, p);
         BuildFloorClutter(root, p);
+        BuildFireBucket(root, p);
         BuildPhotoWall(root, p);
         BuildElectricalDetails(root, p);
         BuildFloorScraps(root, p);
+        BuildContactShadows(root);
         BuildAmbientDust(root);
+    }
+
+    static Material MakeContactShadowMaterial()
+    {
+        string path = MatDir + "/ContactShadow.mat";
+        var shader = Shader.Find("Sprites/Default");
+        if (shader == null) shader = Shader.Find("Unlit/Transparent");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        mat.shader = shader;
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(TexDir + "/ShadowBlob.png");
+        if (texture != null) mat.SetTexture("_MainTex", texture);
+        mat.SetColor("_Color", new Color(0f, 0f, 0f, 0.34f));
+        mat.renderQueue = 3000;
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
+    static void AddContactShadow(Transform root, Material shadow, Vector3 center,
+                                 float width, float depth)
+    {
+        var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        quad.name = "ContactShadow";
+        quad.transform.SetParent(root, false);
+        quad.transform.localPosition = new Vector3(center.x, 0.004f, center.z);
+        quad.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        quad.transform.localScale = new Vector3(width, depth, 1f);
+        var renderer = quad.GetComponent<Renderer>();
+        renderer.sharedMaterial = shadow;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        Object.DestroyImmediate(quad.GetComponent<Collider>());
+    }
+
+    static void BuildContactShadows(Transform root)
+    {
+        var shadow = MakeContactShadowMaterial();
+        AddContactShadow(root, shadow, new Vector3(2.30f, 0f, 0.40f), 2.55f, 1.75f);
+        AddContactShadow(root, shadow, new Vector3(-2.30f, 0f, 0.40f), 2.55f, 1.75f);
+        AddContactShadow(root, shadow, new Vector3(0f, 0f, 0f), 2.45f, 1.45f);
+        AddContactShadow(root, shadow, new Vector3(0.60f, 0f, 5.25f), 3.80f, 1.05f);
+        AddContactShadow(root, shadow, new Vector3(-3.85f, 0f, 5.30f), 2.40f, 0.90f);
+        AddContactShadow(root, shadow, new Vector3(3.95f, 0f, 5.28f), 2.40f, 0.90f);
+        AddContactShadow(root, shadow, new Vector3(-5.45f, 0f, 3.95f), 2.30f, 1.40f);
+        AddContactShadow(root, shadow, new Vector3(3.30f, 0f, 3.10f), 2.00f, 1.30f);
+        AddContactShadow(root, shadow, new Vector3(-2.85f, 0f, 2.80f), 1.50f, 1.00f);
+        AddContactShadow(root, shadow, new Vector3(4.05f, 0f, 1.95f), 1.35f, 0.95f);
     }
 
     static void BuildAmbientDust(Transform root)
@@ -680,6 +733,83 @@ public static class PrepGameBuilder
             radius * 0.82f, 0.035f, p.cardboard, g);
         Cube("Label", new Vector3(0f, -height * 0.05f, -radius * 0.96f),
             new Vector3(radius * 1.15f, height * 0.42f, 0.004f), p.paper, g, false);
+    }
+
+    static void BuildDuckboard(Transform root, Vector3 pos, float width, float depth, LabPalette p)
+    {
+        var g = new GameObject("Duckboard").transform;
+        g.SetParent(root, false);
+        g.localPosition = pos;
+
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Cube("DuckboardRail", new Vector3(side * (width * 0.5f - 0.05f), 0.03f, 0f),
+                new Vector3(0.07f, 0.06f, depth), p.oakDark, g, false);
+        }
+        const int slats = 7;
+        for (int i = 0; i < slats; i++)
+        {
+            float z = -depth * 0.5f + (i + 0.5f) * (depth / slats);
+            Cube("DuckboardSlat", new Vector3(0f, 0.065f, z),
+                new Vector3(width, 0.035f, depth / slats - 0.022f), p.oak, g, false);
+        }
+    }
+
+    static void BuildMicroscope(Transform root, LabPalette p)
+    {
+        var g = new GameObject("StereoMicroscope").transform;
+        g.SetParent(root, false);
+        float bx = 2.04f, bz = 5.22f, y = 0.98f;
+
+        VCylinder("Base", new Vector3(bx, y + 0.02f, bz), 0.11f, 0.04f, p.steelDark, g);
+        Cube("Arm", new Vector3(bx, y + 0.22f, bz + 0.04f),
+            new Vector3(0.04f, 0.36f, 0.05f), p.steelDark, g, false);
+        var armTop = Cube("ArmTop", new Vector3(bx, y + 0.39f, bz),
+            new Vector3(0.04f, 0.10f, 0.17f), p.steelDark, g, false);
+        armTop.transform.localRotation = Quaternion.Euler(-18f, 0f, 0f);
+        Cube("Head", new Vector3(bx, y + 0.44f, bz - 0.06f),
+            new Vector3(0.20f, 0.10f, 0.15f), p.steel, g, false);
+        Cube("Stage", new Vector3(bx, y + 0.19f, bz - 0.09f),
+            new Vector3(0.24f, 0.018f, 0.18f), p.steelDark, g, false);
+        Cube("Slide", new Vector3(bx, y + 0.205f, bz - 0.10f),
+            new Vector3(0.10f, 0.004f, 0.05f), p.paper, g, false);
+        VCylinder("Objective", new Vector3(bx, y + 0.34f, bz - 0.12f),
+            0.024f, 0.10f, p.brass, g);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            var eyepiece = VCylinder("Eyepiece",
+                new Vector3(bx + side * 0.05f, y + 0.51f, bz - 0.02f),
+                0.024f, 0.10f, p.steelDark, g);
+            eyepiece.transform.localRotation = Quaternion.Euler(-18f, 0f, 0f);
+        }
+        var knob = Cylinder("FocusKnob", new Vector3(bx + 0.13f, y + 0.27f, bz + 0.02f),
+            0.03f, 0.05f, p.brass, g);
+        Object.DestroyImmediate(knob.GetComponent<Collider>());
+    }
+
+    static void BuildFireBucket(Transform root, LabPalette p)
+    {
+        float x = -6.10f, z = 2.55f;
+        VCylinder("FireBucket", new Vector3(x, 0.18f, z), 0.18f, 0.36f, p.red, root);
+        VCylinder("FireBucketRim", new Vector3(x, 0.36f, z), 0.19f, 0.03f, p.steel, root);
+        VCylinder("FireSand", new Vector3(x, 0.37f, z), 0.165f, 0.03f, p.burlap, root);
+        Cube("FireBucketHandle", new Vector3(x, 0.44f, z),
+            new Vector3(0.36f, 0.015f, 0.015f), p.steel, root, false);
+
+        var shovel = new GameObject("FireShovel").transform;
+        shovel.SetParent(root, false);
+        shovel.localPosition = new Vector3(x + 0.28f, 0f, z + 0.02f);
+        shovel.localRotation = Quaternion.Euler(0f, 0f, -12f);
+        Cube("ShovelHandle", new Vector3(0f, 0.45f, 0f),
+            new Vector3(0.025f, 0.85f, 0.025f), p.oak, shovel, false);
+        Cube("ShovelBlade", new Vector3(0.02f, 0.08f, 0f),
+            new Vector3(0.16f, 0.20f, 0.015f), p.steel, shovel, false);
+
+        Cube("FireBucketLabel", new Vector3(x, 0.20f, z - 0.183f),
+            new Vector3(0.20f, 0.10f, 0.005f), p.paper, root, false);
+        AddWallText(root, "FireBucketText", "ПЕСОК",
+            new Vector3(x, 0.20f, z - 0.190f), Quaternion.identity,
+            0.006f, new Color(0.30f, 0.10f, 0.06f));
     }
 
     static void BuildSpecimenCabinet(Transform root, LabPalette p)
@@ -1139,6 +1269,25 @@ public static class PrepGameBuilder
         return mat;
     }
 
+    static Material MakeUnlitFlat(string name, Color color)
+    {
+        string path = MatDir + "/" + name + ".mat";
+        var shader = Shader.Find("Universal Render Pipeline/Unlit");
+        if (shader == null) shader = Shader.Find("Unlit/Color");
+        var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (mat == null)
+        {
+            mat = new Material(shader);
+            AssetDatabase.CreateAsset(mat, path);
+        }
+        mat.shader = shader;
+        mat.SetTexture("_BaseMap", null);
+        mat.SetColor("_BaseColor", color);
+        mat.SetFloat("_Cull", 0f);
+        EditorUtility.SetDirty(mat);
+        return mat;
+    }
+
     static GameObject AddPhotoQuad(Transform parent, Vector3 pos, float width, float height,
                                    Material photo)
     {
@@ -1252,7 +1401,7 @@ public static class PrepGameBuilder
 
     static void BuildPeriodWindow(Transform root, float x, float backZ,
                                   Material trim, Material steel, Material glass,
-                                  float y, float w, float h)
+                                  Material blind, float y, float w, float h)
     {
         float z = backZ - 0.12f;
 
@@ -1281,6 +1430,29 @@ public static class PrepGameBuilder
                 new Vector3(w, 0.026f, 0.035f), steel, root, false);
         Cube("WindowSill", new Vector3(x, y - h * 0.5f - 0.14f, backZ - 0.22f),
             new Vector3(w + 0.36f, 0.10f, 0.32f), trim, root, false);
+
+        // Rolled blackout blind and its pull cord above each window.
+        float blindY = y + h * 0.5f + 0.10f;
+        var roller = Cylinder("WindowBlindRoller",
+            new Vector3(x, blindY, backZ - 0.26f), 0.065f, w + 0.12f, blind, root);
+        Object.DestroyImmediate(roller.GetComponent<Collider>());
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Cube("BlindBracket", new Vector3(x + side * (w * 0.5f + 0.06f), blindY, backZ - 0.26f),
+                new Vector3(0.05f, 0.14f, 0.06f), steel, root, false);
+        }
+        float cordTop = blindY - 0.04f;
+        float cordBottom = y - h * 0.5f + 0.45f;
+        Cube("BlindCord", new Vector3(x + w * 0.32f, (cordTop + cordBottom) * 0.5f, backZ - 0.28f),
+            new Vector3(0.006f, cordTop - cordBottom, 0.006f), steel, root, false);
+        Cube("BlindPull", new Vector3(x + w * 0.32f, cordBottom - 0.03f, backZ - 0.28f),
+            new Vector3(0.035f, 0.08f, 0.018f), trim, root, false);
+
+        // Brass-and-steel window latch at the sill.
+        Cube("WindowLatch", new Vector3(x, y - h * 0.5f + 0.09f, backZ - 0.20f),
+            new Vector3(0.13f, 0.025f, 0.025f), steel, root, false);
+        Cube("WindowLatchPlate", new Vector3(x, y - h * 0.5f + 0.04f, backZ - 0.20f),
+            new Vector3(0.07f, 0.07f, 0.02f), trim, root, false);
     }
 
     static void BuildRadiator(Transform root, float x, float z, Material iron)
@@ -1395,6 +1567,14 @@ public static class PrepGameBuilder
     {
         var table = new GameObject("PrepTable").transform;
         Cube("Top", new Vector3(0f, 0.89f, 0f), new Vector3(2.12f, 0.08f, 1.12f), topMat, table);
+        Cube("TopEdgeFront", new Vector3(0f, 0.925f, -0.555f),
+            new Vector3(2.14f, 0.030f, 0.030f), darkMat, table, false);
+        Cube("TopEdgeBack", new Vector3(0f, 0.925f, 0.555f),
+            new Vector3(2.14f, 0.030f, 0.030f), darkMat, table, false);
+        Cube("TopEdgeLeft", new Vector3(-1.055f, 0.925f, 0f),
+            new Vector3(0.030f, 0.030f, 1.12f), darkMat, table, false);
+        Cube("TopEdgeRight", new Vector3(1.055f, 0.925f, 0f),
+            new Vector3(0.030f, 0.030f, 1.12f), darkMat, table, false);
         for (int i = 0; i < 4; i++)
         {
             float x = (i & 1) == 0 ? -0.94f : 0.94f;
@@ -1411,18 +1591,84 @@ public static class PrepGameBuilder
         Cube("StretcherLeft", new Vector3(-0.94f, 0.22f, 0f), new Vector3(0.06f, 0.06f, 0.92f), darkMat, table, false);
         Cube("StretcherRight", new Vector3(0.94f, 0.22f, 0f), new Vector3(0.06f, 0.06f, 0.92f), darkMat, table, false);
         Cube("DrawerFront", new Vector3(0.50f, 0.79f, -0.545f), new Vector3(0.62f, 0.12f, 0.025f), topMat, table, false);
+        Cube("DrawerFrontLeft", new Vector3(-0.50f, 0.79f, -0.545f), new Vector3(0.62f, 0.12f, 0.025f), topMat, table, false);
         var brass = MakeLit("TableBrass", new Color(0.48f, 0.34f, 0.15f), 0.82f, 0.46f);
-        var knob = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        knob.name = "DrawerBrassPull";
-        knob.transform.SetParent(table, false);
-        knob.transform.localPosition = new Vector3(0.50f, 0.79f, -0.575f);
-        knob.transform.localScale = new Vector3(0.045f, 0.035f, 0.035f);
-        knob.GetComponent<Renderer>().sharedMaterial = brass;
-        Object.DestroyImmediate(knob.GetComponent<Collider>());
+        for (int i = 0; i < 2; i++)
+        {
+            float x = i == 0 ? 0.50f : -0.50f;
+            var knob = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            knob.name = "DrawerBrassPull";
+            knob.transform.SetParent(table, false);
+            knob.transform.localPosition = new Vector3(x, 0.79f, -0.575f);
+            knob.transform.localScale = new Vector3(0.045f, 0.035f, 0.035f);
+            knob.GetComponent<Renderer>().sharedMaterial = brass;
+            Object.DestroyImmediate(knob.GetComponent<Collider>());
+        }
+        Cube("TablePlate", new Vector3(0f, 0.79f, -0.545f),
+            new Vector3(0.30f, 0.070f, 0.020f), brass, table, false);
+        AddWallText(table, "TablePlateText", "РХЦ-7",
+            new Vector3(0f, 0.79f, -0.558f), Quaternion.identity,
+            0.006f, new Color(0.18f, 0.12f, 0.08f));
+        for (int sx = -1; sx <= 1; sx += 2)
+        {
+            for (int sz = -1; sz <= 1; sz += 2)
+            {
+                Cube("TableCornerCap", new Vector3(sx * 1.030f, 0.938f, sz * 0.530f),
+                    new Vector3(0.055f, 0.020f, 0.055f), brass, table, false);
+            }
+        }
         Cube("Pad", new Vector3(0f, 0.945f, 0f), new Vector3(0.98f, 0.028f, 0.78f), feltMat, table)
             .name = "BonePadV2";
         Cube("PadRim", new Vector3(0f, 0.935f, 0f), new Vector3(1.04f, 0.018f, 0.84f), darkMat, table, false);
         return table.Find("BonePadV2");
+    }
+
+    static void DetailCrate(Transform crate, string title, string subtitle, Material darkMat)
+    {
+        var iron = MakeLit("CrateIron", new Color(0.14f, 0.145f, 0.14f), 0.65f, 0.34f);
+        var brass = MakeLit("CrateBrass", new Color(0.46f, 0.33f, 0.16f), 0.80f, 0.46f);
+        var labelPaper = MakeUnlitFlat("CrateLabelCard",
+            new Color(0.80f, 0.70f, 0.52f));
+        var ink = new Color(0.13f, 0.09f, 0.06f);
+
+        for (int sx = -1; sx <= 1; sx += 2)
+        {
+            for (int sz = -1; sz <= 1; sz += 2)
+            {
+                Cube("CrateCornerBatten", new Vector3(sx * 1.035f, 0.44f, sz * 0.700f),
+                    new Vector3(0.075f, 0.90f, 0.075f), darkMat, crate, false);
+                for (int row = 0; row < 2; row++)
+                {
+                    float y = 0.12f + row * 0.64f;
+                    Cube("CrateIronFront", new Vector3(sx * 0.93f, y, -0.716f),
+                        new Vector3(0.10f, 0.13f, 0.012f), iron, crate, false);
+                    Cube("CrateIronSide", new Vector3(sx * 1.046f, y, sz * 0.59f),
+                        new Vector3(0.012f, 0.13f, 0.10f), iron, crate, false);
+                }
+            }
+        }
+
+        for (int i = -1; i <= 1; i += 2)
+        {
+            Cube("CrateHinge", new Vector3(i * 0.60f, 0.885f, 0.715f),
+                new Vector3(0.16f, 0.045f, 0.035f), iron, crate, false);
+            Cube("CrateHingePin", new Vector3(i * 0.60f, 0.905f, 0.700f),
+                new Vector3(0.18f, 0.022f, 0.022f), brass, crate, false);
+        }
+
+        Cube("CrateLatchPlate", new Vector3(0f, 0.82f, -0.718f),
+            new Vector3(0.16f, 0.11f, 0.015f), brass, crate, false);
+        Cube("CrateLatchHook", new Vector3(0f, 0.76f, -0.725f),
+            new Vector3(0.055f, 0.09f, 0.020f), iron, crate, false);
+
+        Cube("CratePaperLabel", new Vector3(0f, 0.46f, -0.715f),
+            new Vector3(0.56f, 0.30f, 0.006f), labelPaper, crate, false);
+        AddWallText(crate, "CrateLabelTitle", title,
+            new Vector3(0f, 0.50f, -0.722f), Quaternion.identity,
+            0.012f, ink);
+        AddWallText(crate, "CrateLabelSub", subtitle,
+            new Vector3(0f, 0.425f, -0.722f), Quaternion.identity,
+            0.007f, ink);
     }
 
     static Transform BuildCrateTableAndCrate(Material tableMat, Material crateMat, Material darkMat,
@@ -1466,6 +1712,7 @@ public static class PrepGameBuilder
         crateLight.color = new Color(1f, 0.78f, 0.50f);
         crateLight.enabled = false;
 
+        DetailCrate(crate, "ОБРАЗЦЫ", "РХЦ-7 · 1934", darkMat);
         return crate;
     }
 
@@ -1740,6 +1987,7 @@ public static class PrepGameBuilder
             slot.localRotation = rot;
             slots.Add(slot);
         }
+        DetailCrate(crate, "КОЛЛЕКЦИЯ", "РХЦ-7 · 1934", darkMat);
         return crate;
     }
 
@@ -2535,6 +2783,57 @@ public static class PrepGameBuilder
         sky.SetPixels(skyPixels);
         sky.Apply();
         WritePeriodTexture(TexDir + "/Sky.png", sky);
+
+        // Crate boards: four planks, dark seams, nail heads and worn grain.
+        const int crateSize = 512;
+        var crateTex = new Texture2D(crateSize, crateSize, TextureFormat.RGBA32, false);
+        var cratePixels = new Color[crateSize * crateSize];
+        for (int y = 0; y < crateSize; y++)
+        {
+            int board = y / 128;
+            int py = y % 128;
+            for (int x = 0; x < crateSize; x++)
+            {
+                float grain = Mathf.PerlinNoise(x * 0.020f + board * 7.3f,
+                    y * 0.090f + board * 3.1f);
+                float fine = HashDirt(x, y, 311);
+                float tone = 0.84f + grain * 0.24f + (fine - 0.5f) * 0.06f;
+                int seam = Mathf.Min(py, 127 - py);
+                if (seam < 3) tone *= 0.34f;
+                else if (seam < 8) tone *= Mathf.Lerp(0.58f, 1f, (seam - 3) / 5f);
+                bool nail = (x < 3 || x > crateSize - 4) &&
+                            Mathf.Abs(py - 64) < 3;
+                if (nail) tone *= 0.42f;
+                float stain = Mathf.PerlinNoise(x * 0.007f + 13f, y * 0.011f + 5f);
+                if (stain > 0.70f) tone *= 0.92f;
+                cratePixels[y * crateSize + x] = new Color(
+                    0.48f * tone, 0.39f * tone, 0.29f * tone, 1f);
+            }
+        }
+        crateTex.SetPixels(cratePixels);
+        crateTex.Apply();
+        WritePeriodTexture(TexDir + "/CratePlanks.png", crateTex);
+
+        // Soft radial contact shadow for grounding furniture.
+        const int shadowSize = 256;
+        const float shadowRadius = 128f;
+        var shadow = new Texture2D(shadowSize, shadowSize, TextureFormat.RGBA32, false);
+        var shadowPixels = new Color[shadowSize * shadowSize];
+        for (int y = 0; y < shadowSize; y++)
+        {
+            for (int x = 0; x < shadowSize; x++)
+            {
+                float dx = (x - shadowSize * 0.5f) / shadowRadius;
+                float dy = (y - shadowSize * 0.5f) / shadowRadius;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                float a = 1f - Mathf.SmoothStep(0.08f, 1f, d);
+                a *= a;
+                shadowPixels[y * shadowSize + x] = new Color(0f, 0f, 0f, a);
+            }
+        }
+        shadow.SetPixels(shadowPixels);
+        shadow.Apply();
+        WritePeriodTexture(TexDir + "/ShadowBlob.png", shadow);
     }
 
     static void WritePeriodTexture(string path, Texture2D texture)
