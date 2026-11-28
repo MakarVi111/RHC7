@@ -13,6 +13,9 @@ using UnityEngine.SceneManagement;
 public static class PrepGameBuilder
 {
     const string ScenePath = "Assets/Scenes/RHC7_PrepGame.unity";
+    const string DemoScenePath = "Assets/Scenes/RHC7_DataDemo.unity";
+    const string ValidationScenePath = "Assets/Scenes/RHC7_ConfigValidation.unity";
+    const string InvalidGameScenePath = "Assets/Scenes/RHC7_InvalidDataGame.unity";
     const string BoneDir = "Assets/Models/GameBones";
     const string MeshDir = "Assets/Meshes/Game";
     const string MatDir = "Assets/Materials/Game";
@@ -24,9 +27,92 @@ public static class PrepGameBuilder
     [MenuItem("Tools/RHC7/Build Prep Game")]
     public static void Build()
     {
+        PrepareAssets();
+        LevelDataBuilder.EnsureBaseLevel();
+        EditorApplication.delayCall += () =>
+            BuildLevel(LevelDataBuilder.BaseLevelPath, ScenePath, true);
+    }
+
+    [MenuItem("Tools/RHC7/Build Data Demo (4 bones)")]
+    public static void BuildDataDemo()
+    {
+        PrepareAssets();
+        LevelDataBuilder.EnsureDemoLevel();
+        EditorApplication.delayCall += () =>
+            BuildLevel(LevelDataBuilder.DemoLevelPath, DemoScenePath, false);
+    }
+
+    [MenuItem("Tools/RHC7/Build Config Validation Demo")]
+    public static void BuildConfigValidation()
+    {
+        PrepareAssets();
+        LevelDataBuilder.EnsureInvalidLevel();
+        EditorApplication.delayCall += BuildValidationScene;
+    }
+
+    [MenuItem("Tools/RHC7/Build Invalid Data Game (safe subset)")]
+    public static void BuildInvalidDataGame()
+    {
+        PrepareAssets();
+        LevelDataBuilder.EnsureInvalidLevel();
+        EditorApplication.delayCall += () =>
+            BuildLevel(LevelDataBuilder.InvalidLevelPath, InvalidGameScenePath, false);
+    }
+
+    static void PrepareAssets()
+    {
         EnsureFolders();
         ConfigureBoneImporters();
         EnsurePeriodTextures();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+    }
+
+    static void BuildValidationScene()
+    {
+        var level = AssetDatabase.LoadAssetAtPath<LevelDefinition>(LevelDataBuilder.InvalidLevelPath);
+        if (level == null)
+        {
+            Debug.LogError("[PrepGame] Cannot load invalid level data.");
+            return;
+        }
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        RenderSettings.ambientMode = AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(0.25f, 0.24f, 0.22f);
+        RenderSettings.fog = false;
+
+        var cam = BuildCamera("MainCamera");
+        cam.transform.position = new Vector3(0.2f, 1.7f, -3.0f);
+        cam.transform.rotation = Quaternion.LookRotation(
+            new Vector3(0f, 1.2f, 0f) - cam.transform.position, Vector3.up);
+        cam.fieldOfView = 50f;
+
+        var lightGo = new GameObject("ValidationLight");
+        var light = lightGo.AddComponent<Light>();
+        light.type = LightType.Directional;
+        light.intensity = 0.7f;
+        light.color = new Color(1f, 0.92f, 0.78f);
+        lightGo.transform.rotation = Quaternion.Euler(35f, -25f, 0f);
+
+        var demoGo = new GameObject("ConfigValidationDemo");
+        var demo = demoGo.AddComponent<ConfigValidationDemo>();
+        demo.level = level;
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        Directory.CreateDirectory("Assets/Scenes");
+        EditorSceneManager.SaveScene(scene, ValidationScenePath);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[PrepGame] Built " + ValidationScenePath);
+    }
+
+    static void BuildLevel(string levelPath, string scenePath, bool mainScene)
+    {
+        var level = AssetDatabase.LoadAssetAtPath<LevelDefinition>(levelPath);
+        if (level == null)
+        {
+            Debug.LogError("[PrepGame] Cannot load level data: " + levelPath);
+            return;
+        }
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         RenderSettings.ambientMode = AmbientMode.Flat;
@@ -54,32 +140,29 @@ public static class PrepGameBuilder
         var pad = BuildPrepTable(tableMat, darkMat, feltMat);
         var crateRoot = BuildCrateTableAndCrate(tableMat, crateMat, darkMat, feltMat, hayMat,
             out Transform lid, out Light crateLight);
+        var freshLevel = AssetDatabase.LoadAssetAtPath<LevelDefinition>(levelPath);
+        if (freshLevel != null) level = freshLevel;
+        var report = LevelValidator.Validate(level);
+        Debug.Log("[PrepGame] data check: level=" + (level != null) +
+            " specimens=" + (level != null && level.specimens != null ? level.specimens.Count : -1) +
+            " species=" + (level != null && level.species != null ? level.species.Count : -1) +
+            " valid=" + report.validCount + " errors=" + string.Join(";", report.errors));
+        foreach (var error in report.errors)
+            Debug.LogWarning("[PrepGame] level data: " + error);
+        int slotCount = Mathf.Max(1, report.validCount);
         var finishedCrate = BuildFinishedCrate(tableMat, crateMat, darkMat, feltMat, hayMat,
-            out List<Transform> finishedSlots);
-
-        var bones = new List<GameBone>();
-        bones.Add(SpawnBone(BoneDir + "/trex_skull.fbx", "TrexSkull",
-            "Череп", "Крупный череп с тяжёлой челюстью и зубами — тираннозавр.",
-            DinoSpecies.Trex, true, boneMat,
-            new Vector3(1.95f, 0.875f, 0.25f), new Vector3(0f, 205f, 10f),
-            new Vector3(0f, 25f, 4f), crateRoot));
-        bones.Add(SpawnTrikeComplete("Assets/Meshes/Game/TrikeSkullComplete.asset",
-            "TrikeSkull", "Череп с воротником",
-            "Воротник и три рога — трицератопс.",
-            DinoSpecies.Triceratops, true, boneMat,
-            new Vector3(2.80f, 0.875f, 0.55f), new Vector3(0f, 180f, 4f),
-            new Vector3(0f, 180f, 270f), crateRoot));
-        bones.Add(SpawnBone(BoneDir + "/trex_femur.fbx", "TrexFemur",
-            "Бедренная кость", "Длинная массивная бедренная кость — тираннозавр.",
-            DinoSpecies.Trex, false, boneMat,
-            new Vector3(2.35f, 0.88f, 0.0f), new Vector3(0f, 90f, 0f),
-            new Vector3(0f, 70f, 0f), crateRoot));
+            slotCount, out List<Transform> finishedSlots);
 
         var tagPaper = MakeLit("NameTagPaper", new Color(0.88f, 0.82f, 0.66f), 0f, 0.06f);
         var tagThread = MakeLit("NameTagThread", new Color(0.14f, 0.09f, 0.05f), 0f, 0.1f);
-        AddNameTag(bones[0], "ТИРАННОЗАВР\nЧЕРЕП", tagPaper, tagThread);
-        AddNameTag(bones[1], "ТРИЦЕРАТОПС\nЧЕРЕП", tagPaper, tagThread);
-        AddNameTag(bones[2], "ТИРАННОЗАВР\nБЕДРО", tagPaper, tagThread);
+        var bones = new List<GameBone>();
+        foreach (var definition in report.validSpecimens)
+        {
+            var bone = SpawnSpecimen(definition, crateRoot, boneMat);
+            if (bone == null) continue;
+            AddNameTag(bone, definition.tagText, tagPaper, tagThread);
+            bones.Add(bone);
+        }
 
         var shelf = BuildTools(tableMat, metalMat, out ToolShelfInteraction toolComp);
         var referenceBook = BuildReferenceBook(darkMat, trimMat, metalMat, out Transform bookLid);
@@ -89,7 +172,10 @@ public static class PrepGameBuilder
         var flowGo = new GameObject("GameFlow");
         var flow = flowGo.AddComponent<GameFlow>();
         flow.cam = cam;
-
+        flow.level = level;
+        flow.speciesDefinitions = level.species != null
+            ? level.species.ToArray() : new SpeciesDefinition[0];
+        flow.cleanThreshold = level.cleanThreshold;
         flow.crateRoot = crateRoot;
         flow.crateLid = lid;
         flow.prepPad = pad;
@@ -102,8 +188,6 @@ public static class PrepGameBuilder
         flow.bones = bones.ToArray();
         flow.cleaning = cleaning;
         flow.tools = toolComp;
-        // A slightly wider work view keeps the larger 1930s hall readable
-        // without making the specimen too small for exact cursor cleaning.
         flow.prepViewFov = 50f;
         toolComp.cleaning = cleaning;
         toolComp.cam = cam;
@@ -114,12 +198,6 @@ public static class PrepGameBuilder
         noteUi.enabled = true;
         noteUi.flow = flow;
         noteUi.cleaning = cleaning;
-        flow.bookTrexSkull = AssetDatabase.LoadAssetAtPath<Texture2D>(
-            "Assets/Textures/Notes/NoteTrexSkull.png");
-        flow.bookTrikeSkull = AssetDatabase.LoadAssetAtPath<Texture2D>(
-            "Assets/Textures/Notes/NoteTrikeSkull.png");
-        flow.bookTrexFemur = AssetDatabase.LoadAssetAtPath<Texture2D>(
-            "Assets/Textures/Notes/NoteTrexFemur.png");
         noteUi.brushIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
             "Assets/Textures/Notes/NoteBrush.png");
         noteUi.scraperIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
@@ -130,18 +208,54 @@ public static class PrepGameBuilder
         lighting(crateLight);
         EditorSceneManager.MarkSceneDirty(scene);
         Directory.CreateDirectory("Assets/Scenes");
-        EditorSceneManager.SaveScene(scene, ScenePath);
+        EditorSceneManager.SaveScene(scene, scenePath);
 
-        // Only the new scene remains in the build and in the project.
-        string[] oldScenes = { "Assets/Scenes/CleaningCore.unity", "Assets/Scenes/RHC7_SimpleTable.unity" };
-        foreach (var old in oldScenes)
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(old) != null)
-                AssetDatabase.DeleteAsset(old);
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+        if (mainScene)
+        {
+            string[] oldScenes = { "Assets/Scenes/CleaningCore.unity", "Assets/Scenes/RHC7_SimpleTable.unity" };
+            foreach (var old in oldScenes)
+                if (AssetDatabase.LoadAssetAtPath<SceneAsset>(old) != null)
+                    AssetDatabase.DeleteAsset(old);
+            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+        }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("[PrepGame] Built " + ScenePath + " with " + bones.Count + " bones.");
+        Debug.Log("[PrepGame] Built " + scenePath + " with " + bones.Count + " bones.");
+    }
+
+    static GameBone SpawnSpecimen(SpecimenDefinition definition, Transform crate, Material fallbackMaterial)
+    {
+        if (definition == null) return null;
+        Material mat = definition.boneMaterial != null ? definition.boneMaterial : fallbackMaterial;
+        GameBone bone = null;
+        if (definition.completeMesh != null)
+        {
+            bone = SpawnTrikeComplete(AssetDatabase.GetAssetPath(definition.completeMesh),
+                definition.name, definition.partName, definition.identificationHint,
+                definition.species, definition.isSkull, mat,
+                definition.cratePosition, definition.crateEuler, definition.prepEuler, crate);
+        }
+        else if (definition.bonePrefab != null)
+        {
+            bone = SpawnBone(AssetDatabase.GetAssetPath(definition.bonePrefab),
+                definition.name, definition.partName, definition.identificationHint,
+                definition.species, definition.isSkull, mat,
+                definition.cratePosition, definition.crateEuler, definition.prepEuler, crate);
+        }
+        if (bone != null)
+        {
+            bone.displayName = definition.partName;
+            bone.name = definition.name;
+            if (Mathf.Abs(definition.visualScale - 1f) > 0.001f)
+            {
+                bone.transform.localScale = Vector3.one * definition.visualScale;
+                Bounds scaled = bone.WorldBounds();
+                float bottom = crate != null ? crate.position.y + 0.13f : 0.88f;
+                bone.transform.position += Vector3.up * (bottom - scaled.min.y);
+            }
+        }
+        return bone;
     }
 
     // ------------------------------------------------------------- scene
@@ -711,7 +825,8 @@ public static class PrepGameBuilder
     }
 
     static Transform BuildFinishedCrate(Material tableMat, Material crateMat, Material darkMat,
-                                        Material feltMat, Material hayMat, out List<Transform> slots)
+                                        Material feltMat, Material hayMat, int slotCount,
+                                        out List<Transform> slots)
     {
         var table = new GameObject("FinishedCrateTable").transform;
         Cube("Top", new Vector3(-2.30f, 0.71f, 0.40f), new Vector3(2.45f, 0.08f, 1.55f), tableMat, table);
@@ -759,17 +874,39 @@ public static class PrepGameBuilder
         Cube("LidBattenB", new Vector3(0.62f, 0.055f, -0.68f), new Vector3(0.07f, 0.05f, 1.36f), darkMat, pivot, false);
 
         slots = new List<Transform>();
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < slotCount; i++)
         {
+            float x, z;
+            Quaternion rot;
+            if (slotCount <= 3)
+            {
+                x = i == 0 ? -0.35f : (i == 1 ? 0.50f : 0.05f);
+                z = i == 0 ? -0.15f : (i == 1 ? 0.15f : -0.40f);
+                rot = i == 0 ? Quaternion.Euler(0f, 205f, 10f)
+                    : (i == 1 ? Quaternion.Euler(0f, 180f, 4f) : Quaternion.Euler(0f, 90f, 0f));
+            }
+            else if (slotCount == 4)
+            {
+                int col = i & 1;
+                int row = i >> 1;
+                x = col == 0 ? -0.43f : 0.43f;
+                z = row == 0 ? -0.20f : 0.30f;
+                rot = i == 0 ? Quaternion.Euler(0f, 205f, 10f)
+                    : (i == 1 ? Quaternion.Euler(0f, 180f, 4f)
+                    : (i == 2 ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.Euler(0f, 120f, 4f)));
+            }
+            else
+            {
+                int col = i & 1;
+                int row = i >> 1;
+                x = col == 0 ? -0.43f : 0.43f;
+                z = -0.25f + row * 0.40f;
+                rot = Quaternion.Euler(0f, 180f, 4f);
+            }
             var slot = new GameObject("FinishedSlot" + (i + 1)).transform;
             slot.SetParent(crate, false);
-            slot.localPosition = new Vector3(
-                i == 0 ? -0.35f : (i == 1 ? 0.50f : 0.05f),
-                i == 2 ? 0.13f : 0.125f,
-                i == 0 ? -0.15f : (i == 1 ? 0.15f : -0.40f));
-            slot.localRotation = i == 0
-                ? Quaternion.Euler(0f, 205f, 10f)
-                : (i == 1 ? Quaternion.Euler(0f, 180f, 4f) : Quaternion.Euler(0f, 90f, 0f));
+            slot.localPosition = new Vector3(x, 0.13f, z);
+            slot.localRotation = rot;
             slots.Add(slot);
         }
         return crate;

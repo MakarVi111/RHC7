@@ -14,6 +14,16 @@ public static class NoteImageBuilder
     public static void BuildAll(GameBone[] bones, Transform toolShelf)
     {
         Directory.CreateDirectory(OutDir);
+        string[] required =
+        {
+            "NoteTrexSkull.png", "NoteTrikeSkull.png", "NoteTrexFemur.png",
+            "NoteBrush.png", "NoteScraper.png", "NoteChiselHammer.png"
+        };
+        bool allReady = true;
+        foreach (var file in required)
+            if (!File.Exists(OutDir + "/" + file)) { allReady = false; break; }
+        if (allReady) return;
+
         var stage = new GameObject("NotePreviewStage").transform;
         stage.position = Stage;
 
@@ -56,10 +66,15 @@ public static class NoteImageBuilder
                 file = "NoteTrikeSkull.png";
                 view = Quaternion.Euler(0f, 180f, 270f);
             }
-            else
+            else if (bone.name == "TrexFemur")
             {
                 file = "NoteTrexFemur.png";
                 view = Quaternion.Euler(0f, 70f, 4f);
+            }
+            else
+            {
+                // Additional data-driven bones do not replace the base book art.
+                continue;
             }
             RenderObject(cam, bone.gameObject, view, file, 640, 480);
         }

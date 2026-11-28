@@ -30,9 +30,8 @@ public class GameFlow : MonoBehaviour
     public Transform referenceBook;
     public Transform bookLid;
     public Transform[] finishedSlots;
-    public Texture2D bookTrexSkull;
-    public Texture2D bookTrikeSkull;
-    public Texture2D bookTrexFemur;
+    public LevelDefinition level;
+    public SpeciesDefinition[] speciesDefinitions;
     public Light crateLight;
     public GameBone[] bones;
     public BoneCleaningV2 cleaning;
@@ -742,22 +741,23 @@ public class GameFlow : MonoBehaviour
             "ОПРЕДЕЛИТЕЛЬ КОСТЕЙ · " + current.partName.ToUpperInvariant(),
             bookSmallStyle);
 
-        DrawBookPage(left, "ХИЩНЫЕ ДИНОЗАВРЫ", "ТИРАННОЗАВР",
-            bookTrexSkull, bookTrexFemur,
-            "Крупный череп с тяжёлой челюстью и зубами.\n" +
-            "Длинная массивная бедренная кость.");
-        DrawBookPage(right, "РОГАТЫЕ ДИНОЗАВРЫ", "ТРИЦЕРАТОПС",
-            bookTrikeSkull, null,
-            "Широкий костяной воротник\nи три рога на морде.");
+        SpeciesDefinition leftSpecies = speciesDefinitions != null && speciesDefinitions.Length > 0
+            ? speciesDefinitions[0] : null;
+        SpeciesDefinition rightSpecies = speciesDefinitions != null && speciesDefinitions.Length > 1
+            ? speciesDefinitions[1] : null;
+        DrawBookPage(left, leftSpecies);
+        DrawBookPage(right, rightSpecies);
 
         float btnY = pages.yMax - 68f * s;
         float btnW = pageW - 64f * s;
-        if (GUI.Button(new Rect(left.x + 32f * s, btnY, btnW, 48f * s),
-                "ЭТО ТИРАННОЗАВР", bookButtonStyle))
-            SubmitIdentification(DinoSpecies.Trex);
-        if (GUI.Button(new Rect(right.x + 32f * s, btnY, btnW, 48f * s),
-                "ЭТО ТРИЦЕРАТОПС", bookButtonStyle))
-            SubmitIdentification(DinoSpecies.Triceratops);
+        if (leftSpecies != null && GUI.Button(
+                new Rect(left.x + 32f * s, btnY, btnW, 48f * s),
+                "ЭТО " + leftSpecies.displayName, bookButtonStyle))
+            SubmitIdentification(leftSpecies.speciesValue);
+        if (rightSpecies != null && GUI.Button(
+                new Rect(right.x + 32f * s, btnY, btnW, 48f * s),
+                "ЭТО " + rightSpecies.displayName, bookButtonStyle))
+            SubmitIdentification(rightSpecies.speciesValue);
 
         if (wrongAttempts > 0 && current != null &&
             !string.IsNullOrEmpty(current.identificationHint))
@@ -768,30 +768,35 @@ public class GameFlow : MonoBehaviour
         }
     }
 
-    void DrawBookPage(Rect page, string eyebrow, string title,
-                      Texture2D mainArt, Texture2D extraArt, string description)
+    void DrawBookPage(Rect page, SpeciesDefinition species)
     {
         float pad = 26f;
+        if (species == null)
+        {
+            GUI.Label(new Rect(page.x + pad, page.y + 28f,
+                page.width - pad * 2, 40f), "НЕТ ДАННЫХ ВИДА", bookSmallStyle);
+            return;
+        }
         GUI.Label(new Rect(page.x + pad, page.y + 12f, page.width - pad * 2, 18f),
-            eyebrow, bookSmallStyle);
+            species.pageEyebrow, bookSmallStyle);
         GUI.Label(new Rect(page.x + pad, page.y + 31f, page.width - pad * 2, 34f),
-            title, bookTitleStyle);
+            species.pageTitle, bookTitleStyle);
 
-        float artH = extraArt != null ? 128f : 190f;
+        float artH = species.extraArt != null ? 128f : 190f;
         var artRect = new Rect(page.x + pad, page.y + 70f,
                                page.width - pad * 2, artH);
-        if (mainArt != null)
-            GUI.DrawTexture(artRect, mainArt, ScaleMode.ScaleToFit);
+        if (species.mainArt != null)
+            GUI.DrawTexture(artRect, species.mainArt, ScaleMode.ScaleToFit);
         float descriptionY = page.y + 266f;
-        if (extraArt != null)
+        if (species.extraArt != null)
         {
             var extra = new Rect(page.x + page.width * 0.30f, artRect.yMax + 2f,
                                  page.width * 0.40f, 76f);
-            GUI.DrawTexture(extra, extraArt, ScaleMode.ScaleToFit);
+            GUI.DrawTexture(extra, species.extraArt, ScaleMode.ScaleToFit);
             descriptionY = page.y + 288f;
         }
         GUI.Label(new Rect(page.x + pad, descriptionY,
-                           page.width - pad * 2, 76f), description, bookBodyStyle);
+                           page.width - pad * 2, 76f), species.description, bookBodyStyle);
         GUI.color = new Color(0.28f, 0.18f, 0.10f, 0.35f);
         GUI.DrawTexture(new Rect(page.x + pad, page.yMax - 91f,
                                  page.width - pad * 2, 1), Texture2D.whiteTexture);

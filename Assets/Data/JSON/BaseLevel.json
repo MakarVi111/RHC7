@@ -1,0 +1,106 @@
+{
+    "levelName": "РХЦ-7 · базовая смена",
+    "cleanThreshold": 0.6000000238418579,
+    "specimens": [
+        {
+            "id": "trex_skull",
+            "partName": "Череп",
+            "hint": "Крупный череп с тяжёлой челюстью и зубами — тираннозавр.",
+            "species": "Trex",
+            "isSkull": true,
+            "prefab": "Assets/Models/GameBones/trex_skull.fbx",
+            "mesh": "",
+            "cratePosition": {
+                "x": 1.9500000476837159,
+                "y": 0.875,
+                "z": 0.25
+            },
+            "crateEuler": {
+                "x": 0.0,
+                "y": 205.0,
+                "z": 10.0
+            },
+            "prepEuler": {
+                "x": 0.0,
+                "y": 25.0,
+                "z": 4.0
+            },
+            "visualScale": 1.0,
+            "tagText": "ТИРАННОЗАВР\nЧЕРЕП"
+        },
+        {
+            "id": "trike_skull",
+            "partName": "Череп с воротником",
+            "hint": "Воротник и три рога — трицератопс.",
+            "species": "Triceratops",
+            "isSkull": true,
+            "prefab": "",
+            "mesh": "Assets/Meshes/Game/TrikeSkullComplete.asset",
+            "cratePosition": {
+                "x": 2.799999952316284,
+                "y": 0.875,
+                "z": 0.550000011920929
+            },
+            "crateEuler": {
+                "x": 0.0,
+                "y": 180.0,
+                "z": 4.0
+            },
+            "prepEuler": {
+                "x": 0.0,
+                "y": 180.0,
+                "z": 270.0
+            },
+            "visualScale": 1.0,
+            "tagText": "ТРИЦЕРАТОПС\nЧЕРЕП"
+        },
+        {
+            "id": "trex_femur",
+            "partName": "Бедренная кость",
+            "hint": "Длинная массивная бедренная кость — тираннозавр.",
+            "species": "Trex",
+            "isSkull": false,
+            "prefab": "Assets/Models/GameBones/trex_femur.fbx",
+            "mesh": "",
+            "cratePosition": {
+                "x": 2.3499999046325685,
+                "y": 0.8799999952316284,
+                "z": 0.0
+            },
+            "crateEuler": {
+                "x": 0.0,
+                "y": 90.0,
+                "z": 0.0
+            },
+            "prepEuler": {
+                "x": 0.0,
+                "y": 70.0,
+                "z": 0.0
+            },
+            "visualScale": 1.0,
+            "tagText": "ТИРАННОЗАВР\nБЕДРО"
+        }
+    ],
+    "species": [
+        {
+            "id": "trex",
+            "displayName": "ТИРАННОЗАВР",
+            "species": "Trex",
+            "eyebrow": "ХИЩНЫЕ ДИНОЗАВРЫ",
+            "title": "ТИРАННОЗАВР",
+            "description": "Крупный череп с тяжёлой челюстью и зубами.\nДлинная массивная бедренная кость.",
+            "mainArt": "Assets/Textures/Notes/NoteTrexSkull.png",
+            "extraArt": "Assets/Textures/Notes/NoteTrexFemur.png"
+        },
+        {
+            "id": "triceratops",
+            "displayName": "ТРИЦЕРАТОПС",
+            "species": "Triceratops",
+            "eyebrow": "РОГАТЫЕ ДИНОЗАВРЫ",
+            "title": "ТРИЦЕРАТОПС",
+            "description": "Широкий костяной воротник\nи три рога на морде.",
+            "mainArt": "Assets/Textures/Notes/NoteTrikeSkull.png",
+            "extraArt": ""
+        }
+    ]
+}

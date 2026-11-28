@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2e254c153cd5b14bab500491adc86c7, type: 3}
+  m_Name: TrikeSkull
+  m_EditorClassIdentifier: 
+  id: trike_skull
+  partName: "\u0427\u0435\u0440\u0435\u043F \u0441 \u0432\u043E\u0440\u043E\u0442\u043D\u0438\u043A\u043E\u043C"
+  identificationHint: "\u0412\u043E\u0440\u043E\u0442\u043D\u0438\u043A \u0438 \u0442\u0440\u0438
+    \u0440\u043E\u0433\u0430 \u2014 \u0442\u0440\u0438\u0446\u0435\u0440\u0430\u0442\u043E\u043F\u0441."
+  species: 1
+  isSkull: 1
+  bonePrefab: {fileID: 0}
+  completeMesh: {fileID: 4300000, guid: 50f70b1bad92f5343817a1d3b9a2ca46, type: 2}
+  boneMaterial: {fileID: 0}
+  cratePosition: {x: 2.8, y: 0.875, z: 0.55}
+  crateEuler: {x: 0, y: 180, z: 4}
+  prepEuler: {x: 0, y: 180, z: 270}
+  visualScale: 1
+  tagText: "\u0422\u0420\u0418\u0426\u0415\u0420\u0410\u0422\u041E\u041F\u0421\n\u0427\u0415\u0420\u0415\u041F"
