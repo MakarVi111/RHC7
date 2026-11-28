@@ -12,7 +12,7 @@
             "mesh": "",
             "cratePosition": {
                 "x": 1.9500000476837159,
-                "y": 0.875,
+                "y": 0.125,
                 "z": 0.25
             },
             "crateEuler": {
@@ -64,7 +64,7 @@
             "mesh": "Assets/Meshes/Game/TrikeSkullComplete.asset",
             "cratePosition": {
                 "x": 2.799999952316284,
-                "y": 0.875,
+                "y": 0.125,
                 "z": 0.550000011920929
             },
             "crateEuler": {
@@ -90,7 +90,7 @@
             "mesh": "",
             "cratePosition": {
                 "x": 1.9500000476837159,
-                "y": 0.875,
+                "y": 0.125,
                 "z": 0.25
             },
             "crateEuler": {

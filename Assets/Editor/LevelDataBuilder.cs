@@ -29,8 +29,8 @@ public static class LevelDataBuilder
         var existingDemo = AssetDatabase.LoadAssetAtPath<LevelDefinition>(DemoLevelPath);
         var existingInvalid = AssetDatabase.LoadAssetAtPath<LevelDefinition>(InvalidLevelPath);
         if (existingBase != null && existingDemo != null && existingInvalid != null &&
-            existingBase.dataVersion >= 1 && existingDemo.dataVersion >= 1 &&
-            existingInvalid.dataVersion >= 1)
+            existingBase.dataVersion >= 2 && existingDemo.dataVersion >= 2 &&
+            existingInvalid.dataVersion >= 2)
         {
             // Data assets are the source of truth. Do not overwrite a designer's
             // edits when the scene is rebuilt.
@@ -54,24 +54,24 @@ public static class LevelDataBuilder
         var trexSkull = EnsureSpecimen("TrexSkull", "trex_skull", "Череп",
             "Крупный череп с тяжёлой челюстью и зубами — тираннозавр.",
             DinoSpecies.Trex, true, "Assets/Models/GameBones/trex_skull.fbx", null,
-            new Vector3(1.95f, 0.875f, 0.25f), new Vector3(0f, 205f, 10f),
+            new Vector3(1.95f, 0.125f, 0.25f), new Vector3(0f, 205f, 10f),
             new Vector3(0f, 25f, 4f), "ТИРАННОЗАВР\nЧЕРЕП");
         var trikeSkull = EnsureSpecimen("TrikeSkull", "trike_skull", "Череп с воротником",
             "Воротник и три рога — трицератопс.",
             DinoSpecies.Triceratops, true, null,
             "Assets/Meshes/Game/TrikeSkullComplete.asset",
-            new Vector3(2.80f, 0.875f, 0.55f), new Vector3(0f, 180f, 4f),
+            new Vector3(2.80f, 0.125f, 0.55f), new Vector3(0f, 180f, 4f),
             new Vector3(0f, 180f, 270f), "ТРИЦЕРАТОПС\nЧЕРЕП");
         var femur = EnsureSpecimen("TrexFemur", "trex_femur", "Бедренная кость",
             "Длинная массивная бедренная кость — тираннозавр.",
             DinoSpecies.Trex, false, "Assets/Models/GameBones/trex_femur.fbx", null,
-            new Vector3(2.35f, 0.88f, 0f), new Vector3(0f, 90f, 0f),
+            new Vector3(2.35f, 0.13f, 0f), new Vector3(0f, 90f, 0f),
             new Vector3(0f, 70f, 0f), "ТИРАННОЗАВР\nБЕДРО");
 
         var pelvis = EnsureSpecimen("TrexPelvis", "trex_pelvis", "Таз",
             "Массивный таз с подвздошной костью — тираннозавр.",
             DinoSpecies.Trex, false, "Assets/Models/Bones_Real/Trex_Pelvis.fbx", null,
-            new Vector3(1.65f, 0.88f, 0.82f), new Vector3(0f, 155f, 8f),
+            new Vector3(1.65f, 0.13f, 0.82f), new Vector3(0f, 155f, 8f),
             new Vector3(0f, 120f, 0f), "ТИРАННОЗАВР\nТАЗ");
         pelvis.visualScale = 1.6f;
 
@@ -79,14 +79,14 @@ public static class LevelDataBuilder
         baseLevel.specimens = new List<SpecimenDefinition> { trexSkull, trikeSkull, femur };
         baseLevel.species = new List<SpeciesDefinition> { trex, trike };
         baseLevel.cleanThreshold = 0.6f;
-        baseLevel.dataVersion = 1;
+        baseLevel.dataVersion = 2;
         EditorUtility.SetDirty(baseLevel);
 
         var demo = EnsureLevel(DemoLevelPath, "РХЦ-7 · демо-расширение");
         demo.specimens = new List<SpecimenDefinition> { trexSkull, trikeSkull, femur, pelvis };
         demo.species = new List<SpeciesDefinition> { trex, trike };
         demo.cleanThreshold = 0.6f;
-        demo.dataVersion = 1;
+        demo.dataVersion = 2;
         EditorUtility.SetDirty(demo);
 
         var invalid = EnsureLevel(InvalidLevelPath, "РХЦ-7 · проверка ошибок");
@@ -98,7 +98,7 @@ public static class LevelDataBuilder
         };
         invalid.species = new List<SpeciesDefinition> { trex };
         invalid.cleanThreshold = 0.6f;
-        invalid.dataVersion = 1;
+        invalid.dataVersion = 2;
         EditorUtility.SetDirty(invalid);
 
         AssetDatabase.SaveAssets();

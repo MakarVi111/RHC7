@@ -21,7 +21,7 @@ MonoBehaviour:
   bonePrefab: {fileID: 0}
   completeMesh: {fileID: 4300000, guid: 50f70b1bad92f5343817a1d3b9a2ca46, type: 2}
   boneMaterial: {fileID: 0}
-  cratePosition: {x: 2.8, y: 0.875, z: 0.55}
+  cratePosition: {x: 2.8, y: 0.125, z: 0.55}
   crateEuler: {x: 0, y: 180, z: 4}
   prepEuler: {x: 0, y: 180, z: 270}
   visualScale: 1

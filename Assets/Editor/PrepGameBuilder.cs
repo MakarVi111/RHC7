@@ -183,8 +183,11 @@ public static class PrepGameBuilder
         flow.referenceBook = referenceBook;
         flow.bookLid = bookLid;
         flow.finishedSlots = finishedSlots.ToArray();
-        flow.finishedViewPosition = new Vector3(-2.00f, 3.80f, -0.90f);
-        flow.finishedViewTarget = new Vector3(-2.30f, 1.00f, 0.42f);
+        flow.finishedViewPosition = new Vector3(-1.80f, 2.95f, -1.05f);
+        flow.finishedViewTarget = new Vector3(-2.30f, 0.62f, 0.42f);
+        flow.crateViewPosition = new Vector3(2.00f, 2.75f, -1.10f);
+        flow.crateViewTarget = new Vector3(2.30f, 0.55f, 0.42f);
+        flow.crateViewFov = 50f;
         flow.crateLight = crateLight;
         flow.bones = bones.ToArray();
         flow.cleaning = cleaning;
@@ -1426,17 +1429,10 @@ public static class PrepGameBuilder
                                              Material feltMat, Material hayMat,
                                              out Transform lid, out Light crateLight)
     {
-        var table = new GameObject("CrateTable").transform;
-        Cube("Top", new Vector3(2.30f, 0.71f, 0.40f), new Vector3(2.45f, 0.08f, 1.55f), tableMat, table);
-        for (int i = 0; i < 4; i++)
-        {
-            float x = 2.30f + ((i & 1) == 0 ? -1.05f : 1.05f);
-            float z = 0.40f + ((i & 2) == 0 ? -0.65f : 0.65f);
-            Cube("Leg", new Vector3(x, 0.34f, z), new Vector3(0.09f, 0.68f, 0.09f), darkMat, table);
-        }
-
+        // Museum crates stand directly on the workshop floor; there is no
+        // trestle table under them anymore.
         var crate = new GameObject("SpecimenCrate").transform;
-        crate.position = new Vector3(2.30f, 0.75f, 0.40f);
+        crate.position = new Vector3(2.30f, 0.00f, 0.40f);
         Cube("CrateFloor", new Vector3(0f, 0.03f, 0f), new Vector3(2.04f, 0.06f, 1.34f), crateMat, crate);
         Cube("CrateFloorIn", new Vector3(0f, 0.07f, 0f), new Vector3(1.90f, 0.03f, 1.20f), feltMat, crate, false);
         Cube("WallFront", new Vector3(0f, 0.45f, -0.68f), new Vector3(2.08f, 0.84f, 0.06f), crateMat, crate);
@@ -1671,17 +1667,9 @@ public static class PrepGameBuilder
                                         Material feltMat, Material hayMat, int slotCount,
                                         out List<Transform> slots)
     {
-        var table = new GameObject("FinishedCrateTable").transform;
-        Cube("Top", new Vector3(-2.30f, 0.71f, 0.40f), new Vector3(2.45f, 0.08f, 1.55f), tableMat, table);
-        for (int i = 0; i < 4; i++)
-        {
-            float x = -2.30f + ((i & 1) == 0 ? -1.05f : 1.05f);
-            float z = 0.40f + ((i & 2) == 0 ? -0.65f : 0.65f);
-            Cube("Leg", new Vector3(x, 0.34f, z), new Vector3(0.09f, 0.68f, 0.09f), darkMat, table);
-        }
-
+        // The collection crate is also a floor-standing crate.
         var crate = new GameObject("FinishedCrate").transform;
-        crate.position = new Vector3(-2.30f, 0.75f, 0.40f);
+        crate.position = new Vector3(-2.30f, 0.00f, 0.40f);
         Cube("CrateFloor", new Vector3(0f, 0.03f, 0f), new Vector3(2.04f, 0.06f, 1.34f), crateMat, crate);
         Cube("CrateFloorIn", new Vector3(0f, 0.07f, 0f), new Vector3(1.90f, 0.03f, 1.20f), feltMat, crate, false);
         Cube("WallFront", new Vector3(0f, 0.45f, -0.68f), new Vector3(2.08f, 0.84f, 0.06f), crateMat, crate);

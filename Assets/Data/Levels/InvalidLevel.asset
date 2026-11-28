@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelName: "\u0420\u0425\u0426-7 \xB7 \u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430
     \u043E\u0448\u0438\u0431\u043E\u043A"
-  dataVersion: 1
+  dataVersion: 2
   cleanThreshold: 0.6
   specimens:
   - {fileID: 11400000, guid: bab6e98a35a7f9a48985bf3ea1ee955f, type: 2}

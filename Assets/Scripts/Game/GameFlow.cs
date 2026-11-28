@@ -38,15 +38,15 @@ public class GameFlow : MonoBehaviour
     public ToolShelfInteraction tools;
 
     [Header("Cameras")]
-    public Vector3 crateViewPosition = new Vector3(2.00f, 3.80f, -0.90f);
-    public Vector3 crateViewTarget = new Vector3(2.30f, 1.00f, 0.42f);
+    public Vector3 crateViewPosition = new Vector3(2.00f, 2.75f, -1.10f);
+    public Vector3 crateViewTarget = new Vector3(2.30f, 0.55f, 0.42f);
     public float crateViewFov = 50f;
 
     public Vector3 prepViewPosition = new Vector3(0.24f, 1.88f, -1.85f);
     public Vector3 prepViewTarget = new Vector3(0.24f, 1.12f, 0.95f);
     public float prepViewFov = 52f;
-    public Vector3 finishedViewPosition = new Vector3(-2.00f, 3.80f, -0.90f);
-    public Vector3 finishedViewTarget = new Vector3(-2.30f, 1.00f, 0.42f);
+    public Vector3 finishedViewPosition = new Vector3(-1.80f, 2.95f, -1.05f);
+    public Vector3 finishedViewTarget = new Vector3(-2.30f, 0.62f, 0.42f);
     public float finishedViewFov = 50f;
 
 
