@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -11,7 +12,7 @@ public static class NoteImageBuilder
     const string OutDir = "Assets/Textures/Notes";
     static readonly Vector3 Stage = new Vector3(2000f, 0f, 2000f);
 
-    public static void BuildAll(GameBone[] bones, Transform toolShelf)
+    public static void BuildAll(GameBone[] bones, Transform toolShelf, bool force = false)
     {
         Directory.CreateDirectory(OutDir);
         string[] required =
@@ -22,7 +23,7 @@ public static class NoteImageBuilder
         bool allReady = true;
         foreach (var file in required)
             if (!File.Exists(OutDir + "/" + file)) { allReady = false; break; }
-        if (allReady) return;
+        if (!force && allReady) return;
 
         var stage = new GameObject("NotePreviewStage").transform;
         stage.position = Stage;
@@ -76,7 +77,11 @@ public static class NoteImageBuilder
                 // Additional data-driven bones do not replace the base book art.
                 continue;
             }
-            RenderObject(cam, bone.gameObject, view, file, 640, 480);
+            // Book plates must show the prepared, clean specimen, not the
+            // in-game dirt state. The dirt lives in vertex colours, so a
+            // clean preview is the same mesh with those colours zeroed.
+            RenderObject(cam, bone.gameObject, view, file, 640, 480,
+                0f, 1.18f, true);
         }
 
         if (toolShelf != null)
@@ -106,7 +111,8 @@ public static class NoteImageBuilder
 
     static void RenderObject(Camera cam, GameObject source, Quaternion view,
                              string fileName, int width, int height,
-                             float roll = 0f, float margin = 1.18f)
+                             float roll = 0f, float margin = 1.18f,
+                             bool cleanDirt = false)
     {
         var clone = Object.Instantiate(source);
         clone.name = "NotePreview_" + source.name;
@@ -115,6 +121,24 @@ public static class NoteImageBuilder
         clone.transform.rotation = view;
         clone.transform.localScale = source.transform.lossyScale;
         foreach (var c in clone.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+
+        var previewMeshes = new List<Mesh>();
+        if (cleanDirt)
+        {
+            foreach (var filter in clone.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var sourceMesh = filter.sharedMesh;
+                if (sourceMesh == null) continue;
+                var cleanMesh = Object.Instantiate(sourceMesh);
+                cleanMesh.name = sourceMesh.name + "_CleanPreview";
+                var colors = new Color32[cleanMesh.vertexCount];
+                for (int i = 0; i < colors.Length; i++)
+                    colors[i] = new Color32(0, 0, 0, 0);
+                cleanMesh.colors32 = colors;
+                filter.sharedMesh = cleanMesh;
+                previewMeshes.Add(cleanMesh);
+            }
+        }
 
         Bounds b = GetBounds(clone);
         if (b.size.sqrMagnitude < 0.000001f)
@@ -153,6 +177,16 @@ public static class NoteImageBuilder
         File.WriteAllBytes(path, tex.EncodeToPNG());
         Object.DestroyImmediate(tex);
         Object.DestroyImmediate(clone);
+        foreach (var mesh in previewMeshes)
+            Object.DestroyImmediate(mesh);
+    }
+
+    [MenuItem("Tools/RHC7/Rebuild Clean Book Illustrations")]
+    public static void RebuildCleanBookIllustrations()
+    {
+        var bones = Object.FindObjectsByType<GameBone>(FindObjectsSortMode.None);
+        BuildAll(bones, null, true);
+        Debug.Log("[RHC7] Rebuilt book illustrations without dirt (" + bones.Length + " bones).");
     }
 
     static Bounds GetBounds(GameObject go)
