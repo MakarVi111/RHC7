@@ -13,6 +13,7 @@ import fitz
 DOCS = Path(__file__).resolve().parent
 PROJECT = DOCS.parent
 ROOT = PROJECT.parent
+SUBMISSION = ROOT / "РХЦ-7_53842_Сдача"
 SHOTS = PROJECT / "Screenshots"
 ART = DOCS / "artbook_images"
 
@@ -302,7 +303,7 @@ TEMPLATE = r"""<!doctype html>
   </div>
   <div class="meta">
     UNITY 6 · URP · C#<br>
-    КОМАНДА 56755 · 2026
+    КОМАНДА 53842 · 2026
   </div>
   <div class="folio">01</div>
 </section>
@@ -772,12 +773,12 @@ foreach (var d in report.validSpecimens)
     <div>
       <h2 style="font-size:10.5pt;">Артефакты</h2>
       <ul class="list" style="margin-top:1.5mm;">
-        <li><b>Архитектура.pdf</b> / <b>РХЦ-7_56755_Программирование.pdf</b> — этот блок.</li>
+        <li><b>Архитектура.pdf</b> / <b>РХЦ-7_53842_Программирование.pdf</b> — этот блок.</li>
         <li><b>RHC7_PrepGame_Source_2026-11-28.zip</b> — исходники без Library/Temp.</li>
         <li><b>RHC7_Assets_All_2026-11-28.unitypackage</b> — все ассеты.</li>
         <li>Реальные фото: <b>Assets/Textures/Book/CREDITS.md</b>.</li>
       </ul>
-      <p class="tiny" style="margin-top:2mm;">Команда 56755 · РХЦ-7 · 2026</p>
+      <p class="tiny" style="margin-top:2mm;">Команда 53842 · РХЦ-7 · 2026</p>
     </div>
   </div>
 
@@ -845,7 +846,7 @@ def print_pdf(html_path: Path, pdf_path: Path):
 
 def write_repo_file():
     text = """РХЦ-7 · Музейная препарация
-Команда: 56755
+Команда: 53842
 Репозиторий: https://github.com/MakarVi111/RHC7
 Ветка: prep-game-final
 Кодовая база: f506d26 (ветка prep-game-final)
@@ -859,20 +860,44 @@ Unity: 6000.0.76f1 (Unity 6.0.76f1), URP
 Архив исходников: RHC7_PrepGame_Source_2026-11-28.zip
 Пакет ассетов: RHC7_Assets_All_2026-11-28.unitypackage
 Документация: Архитектура.pdf
-Блок программирования: РХЦ-7_56755_Программирование.pdf
+Блок программирования: РХЦ-7_53842_Программирование.pdf
 """
     (ROOT / "Репозиторий.txt").write_text(text, encoding="utf-8")
     (DOCS / "Репозиторий.txt").write_text(text, encoding="utf-8")
+    SUBMISSION.mkdir(exist_ok=True)
+    (SUBMISSION / "Репозиторий.txt").write_text(text, encoding="utf-8")
+
+
+def write_submission_manifest():
+    SUBMISSION.mkdir(exist_ok=True)
+    text = """РХЦ-7 · Музейная препарация
+Команда 53842 · 2026
+
+Состав папки:
+- РХЦ-7_53842_Артбук.pdf — артбук команды.
+- РХЦ-7_53842_Программирование.pdf — блок «Программирование».
+- Архитектура.pdf — формальная копия блока программирования.
+- Репозиторий.txt — ссылка, ветка, сцены и запуск.
+
+Репозиторий: https://github.com/MakarVi111/RHC7
+Ветка: prep-game-final
+Unity: 6000.0.76f1, URP
+"""
+    (SUBMISSION / "README.txt").write_text(text, encoding="utf-8")
 
 
 def main():
     html_path = build_html()
-    pdf_program = DOCS / "РХЦ-7_56755_Программирование.pdf"
+    pdf_program = DOCS / "РХЦ-7_53842_Программирование.pdf"
     print_pdf(html_path, pdf_program)
     shutil.copyfile(pdf_program, DOCS / "Архитектура.pdf")
-    shutil.copyfile(pdf_program, ROOT / "РХЦ-7_56755_Программирование.pdf")
+    shutil.copyfile(pdf_program, ROOT / "РХЦ-7_53842_Программирование.pdf")
     shutil.copyfile(pdf_program, ROOT / "Архитектура.pdf")
+    SUBMISSION.mkdir(exist_ok=True)
+    shutil.copyfile(pdf_program, SUBMISSION / "РХЦ-7_53842_Программирование.pdf")
+    shutil.copyfile(pdf_program, SUBMISSION / "Архитектура.pdf")
     write_repo_file()
+    write_submission_manifest()
 
     doc = fitz.open(pdf_program)
     print("PDF pages:", doc.page_count, "size MB:", round(pdf_program.stat().st_size / 1048576, 2))
